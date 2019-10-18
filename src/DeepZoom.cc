@@ -144,6 +144,15 @@ void DeepZoom::run( Session* session, const std::string& argument ){
   x = atoi( suffix.substr(0,n).c_str() );
   y = atoi( suffix.substr(n+1,suffix.length()).c_str() );
 
+  // Extract extension
+  string ext = argument.substr(argument.find_last_of(".") + 1);
+  *(session->logfile) << "DeepZoom :: ext " << ext << endl;
+
+  if ( argument == "tiff" ) {
+    session->view->output_format = TIFF_;
+    if( session->loglevel >= 3 ) *(session->logfile) << "DeepZoom :: TIFF output" << endl;
+  }
+
 
   // Take into account the extra zoom levels required by the DeepZoom spec
   resolution = resolution - (dzi_res-numResolutions) - 1;

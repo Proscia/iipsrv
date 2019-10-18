@@ -205,7 +205,7 @@ void IIIF::run( Session* session, const string& src )
                      << "  ]," << endl
                      << "  \"profile\" : [" << endl
                      << "     \"" << IIIF_PROFILE << "\"," << endl
-                     << "     { \"formats\" : [ \"jpg\" ]," << endl
+                     << "     { \"formats\" : [ \"jpg\", \"tiff\" ]," << endl
                      << "       \"qualities\" : [ \"native\",\"color\",\"gray\",\"bitonal\" ]," << endl
                      << "       \"supports\" : [\"regionByPct\",\"regionSquare\",\"sizeByForcedWh\",\"sizeByWh\",\"sizeAboveFull\",\"rotationBy90s\",\"mirroring\"]," << endl
 		     << "       \"maxWidth\" : " << max << "," << endl
@@ -480,8 +480,13 @@ void IIIF::run( Session* session, const string& src )
 //       if ( format != "jpg" && format != "png" ) {
 //        throw invalid_argument( "IIIF :: Only JPEG and PNG output supported" );
 //#else
-        if ( format != "jpg" ) {
-          throw invalid_argument( "IIIF :: Only JPEG output supported" );
+
+        if ( format == "tiff" ) {
+          session->view->output_format = TIFF_;
+          if( session->loglevel >= 3 ) *(session->logfile) << "TIFF :: TIFF output" << endl;
+        }
+        else if ( format != "jpg" ) {
+          throw invalid_argument( "IIIF :: Only JPEG and TIFF output supported" );
 //#endif
       }
 //     }

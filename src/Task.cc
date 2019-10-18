@@ -346,6 +346,27 @@ void JTL::run( Session* session, const string& argument ){
   int resolution = atoi( argument.substr( 0, delimitter ).c_str() );
   int tile = atoi( argument.substr( delimitter + 1, argument.length() ).c_str() );
 
+  // For the moment, only deal with JPEG and TIFF.
+  // If we have specified something else, give a warning
+  // and send JPEG anyway
+  if ( argument == "tiff" ) {
+    session->view->output_format = TIFF_;
+    if( session->loglevel >= 3 ) *(session->logfile) << "CVT :: TIFF output" << endl;
+  }
+#ifdef HAVE_PNG
+  else if ( argument == "png" ) {
+    session->view->output_format = PNG;
+    if( session->loglevel >= 3 ) *(session->logfile) << "CVT :: PNG output" << endl;
+  }
+#endif
+  else {
+    if( argument != "jpeg" && session->loglevel >= 1 )
+      *(session->logfile) << "CVT :: Unsupported request: '" << argument << "'. Sending JPEG." << endl;
+    session->view->output_format = JPEG;
+    if( session->loglevel >= 3 ) *(session->logfile) << "CVT :: JPEG output" << endl;
+  }
+
+
   // Send out the requested tile
   this->send( session, resolution, tile );
 }

@@ -42,6 +42,14 @@ void JTL::send( Session* session, int resolution, int tile ){
   // Time this command
   if( session->loglevel >= 2 ) command_timer.start();
 
+  // Set up our output format handler
+  Compressor *compressor = NULL;
+  if( session->view->output_format == JPEG ) compressor = session->jpeg;
+  else if ( session->view->output_format == TIFF_ ) compressor = session->tiff;
+#ifdef HAVE_PNG
+  else if ( session->view->output_format == PNG ) compressor = session->png;
+#endif
+  else return;
 
   // If we have requested a rotation, remap the tile index to rotated coordinates
   if( (int)((session->view)->getRotation()) % 360 == 90 ){
@@ -69,7 +77,7 @@ void JTL::send( Session* session, int resolution, int tile ){
   }
 
 
-  TileManager tilemanager( session->tileCache, *session->image, session->watermark, session->jpeg, session->logfile, session->loglevel );
+  TileManager tilemanager( session->tileCache, *session->image, session->watermark, compressor, session->logfile, session->loglevel );
 
 
   // First calculate histogram if we have asked for either binarization,
@@ -88,7 +96,7 @@ void JTL::send( Session* session, int resolution, int tile ){
 
     if( session->loglevel >= 4 ){
       *(session->logfile) << "JTL :: Calculated histogram in "
-			  << function_timer.getTime() << " microseconds" << endl;
+        << function_timer.getTime() << " microseconds" << endl;
     }
 
     // Insert the histogram into our image cache
@@ -105,7 +113,7 @@ void JTL::send( Session* session, int resolution, int tile ){
   if( (*session->image)->getNumBitsPerPixel() > 8 || (*session->image)->getColourSpace() == CIELAB
       || (*session->image)->getNumChannels() == 2 || (*session->image)->getNumChannels() > 3
       || ( session->view->colourspace==GREYSCALE && (*session->image)->getNumChannels()==3 &&
-	   (*session->image)->getNumBitsPerPixel()==8 )
+     (*session->image)->getNumBitsPerPixel()==8 )
       || session->view->floatProcessing() || session->view->equalization
       || session->view->getRotation() != 0.0 || session->view->flip != 0
       ) ct = UNCOMPRESSED;
@@ -116,23 +124,23 @@ void JTL::send( Session* session, int resolution, int tile ){
   if( session->view->embedICC() && ((*session->image)->getMetadata("icc").size()>0) ){
     if( session->loglevel >= 3 ){
       *(session->logfile) << "JTL :: Embedding ICC profile with size "
-			  << (*session->image)->getMetadata("icc").size() << " bytes" << endl;
+        << (*session->image)->getMetadata("icc").size() << " bytes" << endl;
     }
-    session->jpeg->setICCProfile( (*session->image)->getMetadata("icc") );
+    compressor->setICCProfile( (*session->image)->getMetadata("icc") );
   }
 
 
   RawTile rawtile = tilemanager.getTile( resolution, tile, session->view->xangle,
-					 session->view->yangle, session->view->getLayers(), ct );
+           session->view->yangle, session->view->getLayers(), ct );
 
 
   int len = rawtile.dataLength;
 
   if( session->loglevel >= 2 ){
     *(session->logfile) << "JTL :: Tile size: " << rawtile.width << " x " << rawtile.height << endl
-			<< "JTL :: Channels per sample: " << rawtile.channels << endl
-			<< "JTL :: Bits per channel: " << rawtile.bpc << endl
-			<< "JTL :: Data size is " << len << " bytes" << endl;
+      << "JTL :: Channels per sample: " << rawtile.channels << endl
+      << "JTL :: Bits per channel: " << rawtile.bpc << endl
+      << "JTL :: Data size is " << len << " bytes" << endl;
   }
 
 
@@ -170,8 +178,8 @@ void JTL::send( Session* session, int resolution, int tile ){
 
       // Histogram has been calculated using 8 bits, so scale up to native bit depth
       if( rawtile.bpc > 8 && rawtile.sampleType == FIXEDPOINT ){
-	n0 = n0 << (rawtile.bpc-8);
-	n1 = n1 << (rawtile.bpc-8);
+  n0 = n0 << (rawtile.bpc-8);
+  n1 = n1 << (rawtile.bpc-8);
       }
 
       min.assign( rawtile.bpc, (float)n0 );
@@ -181,8 +189,8 @@ void JTL::send( Session* session, int resolution, int tile ){
       session->view->contrast = 1.0;
 
       if( session->loglevel >= 5 ){
-	*(session->logfile) << "JTL :: Applying contrast stretch for image range of "
-			    << n0 << " - " << n1 << endl;
+  *(session->logfile) << "JTL :: Applying contrast stretch for image range of "
+          << n0 << " - " << n1 << endl;
       }
     }
 
@@ -201,12 +209,12 @@ void JTL::send( Session* session, int resolution, int tile ){
     // Apply hill shading if requested
     if( session->view->shaded ){
       if( session->loglevel >= 4 ){
-	*(session->logfile) << "JTL :: Applying hill-shading";
-	function_timer.start();
+  *(session->logfile) << "JTL :: Applying hill-shading";
+  function_timer.start();
       }
       session->processor->shade( rawtile, session->view->shade[0], session->view->shade[1] );
       if( session->loglevel >= 4 ){
-	*(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+  *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
       }
     }
 
@@ -214,12 +222,12 @@ void JTL::send( Session* session, int resolution, int tile ){
     // Apply color twist if requested
     if( session->view->ctw.size() ){
       if( session->loglevel >= 4 ){
-	*(session->logfile) << "JTL :: Applying color twist";
-	function_timer.start();
+  *(session->logfile) << "JTL :: Applying color twist";
+  function_timer.start();
       }
       session->processor->twist( rawtile, session->view->ctw );
       if( session->loglevel >= 4 ){
-	*(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+  *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
       }
     }
 
@@ -228,12 +236,12 @@ void JTL::send( Session* session, int resolution, int tile ){
     if( session->view->gamma != 1.0 ){
       float gamma = session->view->gamma;
       if( session->loglevel >= 4 ){
-	*(session->logfile) << "JTL :: Applying gamma of " << gamma;
-	function_timer.start();
+  *(session->logfile) << "JTL :: Applying gamma of " << gamma;
+  function_timer.start();
       }
       session->processor->gamma( rawtile, gamma);
       if( session->loglevel >= 4 ){
-	*(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+  *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
       }
     }
 
@@ -241,12 +249,12 @@ void JTL::send( Session* session, int resolution, int tile ){
     // Apply inversion if requested
     if( session->view->inverted ){
       if( session->loglevel >= 4 ){
-	*(session->logfile) << "JTL :: Applying inversion";
-	function_timer.start();
+  *(session->logfile) << "JTL :: Applying inversion";
+  function_timer.start();
       }
       session->processor->inv( rawtile );
       if( session->loglevel >= 4 ){
-	*(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+  *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
       }
     }
 
@@ -254,15 +262,14 @@ void JTL::send( Session* session, int resolution, int tile ){
     // Apply color mapping if requested
     if( session->view->cmapped ){
       if( session->loglevel >= 4 ){
-	*(session->logfile) << "JTL :: Applying color map";
-	function_timer.start();
+  *(session->logfile) << "JTL :: Applying color map";
+  function_timer.start();
       }
       session->processor->cmap( rawtile, session->view->cmap );
       if( session->loglevel >= 4 ){
-	*(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+  *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
       }
     }
-
 
     // Apply any contrast adjustments
     float contrast = session->view->contrast;
@@ -374,57 +381,198 @@ void JTL::send( Session* session, int resolution, int tile ){
 
 
   // Compress to JPEG
-  if( rawtile.compressionType == UNCOMPRESSED ){
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << "JTL :: Compressing UNCOMPRESSED to JPEG";
-      function_timer.start();
-    }
-    len = session->jpeg->Compress( rawtile );
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << " in " << function_timer.getTime() << " microseconds to "
-                          << rawtile.dataLength << " bytes" << endl;
+  // if( rawtile.compressionType == UNCOMPRESSED ){
+  //   if( session->loglevel >= 4 ){
+  //     *(session->logfile) << "JTL :: Compressing UNCOMPRESSED to JPEG";
+  //     function_timer.start();
+  //   }
+  //   len = session->jpeg->Compress( rawtile );
+  //   if( session->loglevel >= 4 ){
+  //     *(session->logfile) << " in " << function_timer.getTime() << " microseconds to "
+  //                         << rawtile.dataLength << " bytes" << endl;
 
-    }
-  }
-
+  //   }
+  // }
 
 #ifndef DEBUG
-  char str[1024];
 
-  snprintf( str, 1024,
-	    "Server: iipsrv/%s\r\n"
-	    "X-Powered-By: IIPImage\r\n"
-	    "Content-Type: image/jpeg\r\n"
-            "Content-Length: %d\r\n"
-	    "Last-Modified: %s\r\n"
-	    "%s\r\n"
-	    "\r\n",
-	    VERSION, len,(*session->image)->getTimestamp().c_str(), session->response->getCacheControl().c_str() );
-
-  session->out->printf( str );
+  // Define our separator depending on the OS
+#ifdef WIN32
+  const string separator = "\\";
+#else
+  const string separator = "/";
 #endif
 
 
-  if( session->out->putStr( static_cast<const char*>(rawtile.data), len ) != len ){
-    if( session->loglevel >= 1 ){
-      *(session->logfile) << "JTL :: Error writing jpeg tile" << endl;
+  // Get our image file name and strip of the directory path and any suffix
+  string filename = (*session->image)->getImagePath();
+  int pos = filename.rfind(separator)+1;
+  string basename = filename.substr( pos, filename.rfind(".")-pos );
+
+  char str[1024];
+  snprintf( str, 1024,
+      //"Server: iipsrv/%s\r\n"
+      //"X-Powered-By: IIPImage\r\n"
+      "%s\r\n"
+      "Last-Modified: %s\r\n"
+      "Content-Type: %s\r\n"
+      "Content-Disposition: inline;filename=\"%s.%s\"\r\n"
+#ifdef CHUNKED
+      "Transfer-Encoding: chunked\r\n"
+#endif
+      "\r\n",
+      session->response->getCacheControl().c_str(),
+      (*session->image)->getTimestamp().c_str(),
+      compressor->getMimeType(), basename.c_str(), compressor->getSuffix() );
+
+  session->out->printf( (const char*) str );
+#endif
+
+
+  if( rawtile.compressionType == UNCOMPRESSED ){
+    // create new reference/copy of raw_tile for naming consistency with CVT-sourced code
+    RawTile complete_image = rawtile;
+
+    unsigned int resampled_width = rawtile.width;
+    unsigned int resampled_height = rawtile.height;
+
+    // Initialise our output compression object
+    unsigned int strip_height = 128;
+    compressor->InitCompression( complete_image, (session->view->output_format != TIFF_) ? resampled_height : strip_height );
+
+
+    len = compressor->getHeaderSize();
+
+  #ifdef CHUNKED
+    snprintf( str, 1024, "%X\r\n", len );
+    if( session->loglevel >= 4 ) *(session->logfile) << "JTL :: Output Header Chunk : " << str;
+    session->out->printf( str );
+  #endif
+
+    if( session->out->putStr( (const char*) compressor->getHeader(), len ) != len ){
+      if( session->loglevel >= 1 ){
+        *(session->logfile) << "JTL :: Error writing header" << endl;
+      }
+    }
+
+  #ifdef CHUNKED
+    session->out->printf( "\r\n" );
+  #endif
+
+    // Flush our block of data
+    if( session->out->flush() == -1 ) {
+      if( session->loglevel >= 1 ){
+        *(session->logfile) << "JTL :: Error flushing output data" << endl;
+      }
+    }
+
+
+    // Send out the data per strip of fixed height.
+    // Allocate enough memory for this plus an extra 64k for instances where compressed
+    // data is greater than uncompressed
+    unsigned int channels = complete_image.channels;
+    unsigned int bytes_pp = complete_image.bpc / 8;
+    unsigned char* output = new unsigned char[bytes_pp*resampled_width*channels*strip_height+65536];
+    int strips = (resampled_height/strip_height) + (resampled_height%strip_height == 0 ? 0 : 1);
+
+    for( int n=0; n<strips; n++ ){
+
+      // Get the starting index for this strip of data
+      unsigned char* input = &((unsigned char*)complete_image.data)[n*strip_height*bytes_pp*resampled_width*channels];
+
+      // The last strip may have a different height
+      if( (n==strips-1) && (resampled_height%strip_height!=0) ) strip_height = resampled_height % strip_height;
+
+      if( session->loglevel >= 3 ){
+        *(session->logfile) << "JTL :: About to compress strip with height " << strip_height << endl;
+      }
+
+      // Compress the strip
+      len = compressor->CompressStrip( input, output, strip_height );
+
+      if( session->loglevel >= 3 ){
+        *(session->logfile) << "JTL :: Compressed data strip length is " << len << endl;
+      }
+
+      if ( session->view->output_format != TIFF_) {
+  #ifdef CHUNKED
+        // Send chunk length in hex
+        snprintf( str, 1024, "%X\r\n", len );
+        if( session->loglevel >= 4 ) *(session->logfile) << "JTL :: Chunk : " << str;
+        session->out->printf( str );
+  #endif
+
+        // Send this strip out to the client
+        if( len != session->out->putStr( (const char*) output, len ) ){
+          if( session->loglevel >= 1 ){
+            *(session->logfile) << "JTL :: Error writing strip: " << len << endl;
+          }
+        }
+
+  #ifdef CHUNKED
+        // Send closing chunk CRLF
+        session->out->printf( "\r\n" );
+  #endif
+
+        // Flush our block of data
+        if( session->out->flush() == -1 ) {
+          if( session->loglevel >= 1 ){
+            *(session->logfile) << "JTL :: Error flushing data" << endl;
+          }
+        }
+
+      }
+    }
+
+    // Finish off the image compression
+    if (session->view->output_format == TIFF_) {
+      delete[] output;
+      output = new unsigned char[8*bytes_pp*resampled_width*channels*resampled_height+65536];
+    }
+    len = compressor->Finish( output );
+
+  #ifdef CHUNKED
+    snprintf( str, 1024, "%X\r\n", len );
+    if( session->loglevel >= 4 ) *(session->logfile) << "JTL :: Final Data Chunk : " << str << endl;
+    session->out->printf( str );
+  #endif
+
+    if( session->out->putStr( (const char*) output, len ) != len ){
+      if( session->loglevel >= 1 ){
+        *(session->logfile) << "JTL :: Error writing output" << endl;
+      }
+    }
+
+    delete[] output;
+
+
+  #ifdef CHUNKED
+    // Send closing chunk CRLF
+    session->out->printf( "\r\n" );
+    // Send closing blank chunk
+    session->out->printf( "0\r\n\r\n" );
+  #endif
+
+    if( session->out->flush()  == -1 ) {
+      if( session->loglevel >= 1 ){
+        *(session->logfile) << "JTL :: Error flushing output" << endl;
+      }
+    }
+
+    // Inform our response object that we have sent something to the client
+    session->response->setImageSent();
+
+    // Total JTL response time
+    if( session->loglevel >= 2 ){
+      *(session->logfile) << "JTL :: Total command time " << command_timer.getTime() << " microseconds" << endl;
     }
   }
-
-
-  if( session->out->flush() == -1 ) {
-    if( session->loglevel >= 1 ){
-      *(session->logfile) << "JTL :: Error flushing jpeg tile" << endl;
+  else {
+    if( session->out->putStr( static_cast<const char*>(rawtile.data), len ) != len ){
+      if( session->loglevel >= 1){
+        *(session->logfile) << "JTL :: Error writing output" << endl;
+      }
     }
+    session->response->setImageSent();
   }
-
-
-  // Inform our response object that we have sent something to the client
-  session->response->setImageSent();
-
-  // Total JTL response time
-  if( session->loglevel >= 2 ){
-    *(session->logfile) << "JTL :: Total command time " << command_timer.getTime() << " microseconds" << endl;
-  }
-
 }

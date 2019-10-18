@@ -22,6 +22,7 @@
 
 
 #include "IIPImage.h"
+#include "QPTIFFImage.h"
 
 #ifdef HAVE_OPENSLIDE
 #include "OpenSlideImage.h"
@@ -145,7 +146,20 @@ void IIPImage::testImageType()
       else if( memcmp( header, stdtiff, 3 ) == 0
                || memcmp( header, lsbtiff, 4 ) == 0 || memcmp( header, msbtiff, 4 ) == 0
                || memcmp( header, lbigtiff, 4 ) == 0 || memcmp( header, bbigtiff, 4 ) == 0 ){
-        format = TIF;
+        TIFF *test = TIFFOpen(pstr, "rm");
+        if( test == NULL ){
+          string message = "Unable to open file '" + path + "'";
+          throw file_error( message );
+        }
+        char *software_tag;
+        TIFFGetField(test, TIFFTAG_SOFTWARE, &software_tag);
+        if ( string(software_tag).rfind("PerkinElmer-QPI", 0) == 0 ) {
+          format = QPTIFF;
+        }
+        else {
+          format = TIF;
+        }
+        TIFFClose(test);
       }
       else format = UNSUPPORTED;
     }

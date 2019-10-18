@@ -73,4 +73,6 @@ iipsrv_fcgi_SOURCES = \
 			Watermark.h \
 			Watermark.cc \
 			Logger.h \
-			Memcached.h
+			Memcached.h \
+			QPTIFFImage.h \
+			QPTIFFImage.cc

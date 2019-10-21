@@ -347,22 +347,24 @@ void CVT::send( Session* session ){
 
 
     // clip from 16bit or 32bit to 8bit if needed
-    if( session->loglevel >=5 ) function_timer.start();
-    unsigned int b = 8;
-    if ( session->view->output_format == TIFF_ ) {
-      b = (original_bpc < session->view->output_bpc) ? original_bpc : session->view->output_bpc;
-    }
-#ifdef HAVE_PNG
-    else if ( session->view->output_format == PNG ) {
-      b = (session->view->output_bpc <= 16) ? session->view->output_bpc : 16;
-      b = (original_bpc < b) ? original_bpc : b;
-    }
-#endif
-    session->processor->clip( complete_image, b );
-    if( session->loglevel >= 5 ){
-      *(session->logfile) << "CVT :: Converting to " << b << "bit in "
-                          << function_timer.getTime() << " microseconds" << endl;
-    }
+    //if ( session->view->output_format != TIFF_ ){
+      if( session->loglevel >=5 ) function_timer.start();
+      unsigned int b = 8;
+      if ( session->view->output_format == TIFF_ ) {
+        b = (original_bpc < session->view->output_bpc) ? original_bpc : session->view->output_bpc;
+      }
+  #ifdef HAVE_PNG
+      else if ( session->view->output_format == PNG ) {
+        b = (session->view->output_bpc <= 16) ? session->view->output_bpc : 16;
+        b = (original_bpc < b) ? original_bpc : b;
+      }
+  #endif
+      session->processor->clip( complete_image, b );
+      if( session->loglevel >= 5 ){
+        *(session->logfile) << "CVT :: Converting to " << b << "bit in "
+                            << function_timer.getTime() << " microseconds" << endl;
+      }
+    //}
   }
 
 
@@ -393,20 +395,21 @@ void CVT::send( Session* session ){
 
 
   // Reduce to 1 or 3 bands if we have an alpha channel or a multi-band image
-  if( (complete_image.channels==2) || (complete_image.channels>3 ) ){
+  if ( session->view->output_format != TIFF_ ){
+    if( (complete_image.channels==2) || (complete_image.channels>3 ) ){
 
-    int output_channels = (complete_image.channels==2)? 1 : 3;
-    if( session->loglevel >= 5 ) function_timer.start();
+      int output_channels = (complete_image.channels==2)? 1 : 3;
+      if( session->loglevel >= 5 ) function_timer.start();
 
-    session->processor->flatten( complete_image, output_channels );
+      session->processor->flatten( complete_image, output_channels );
 
-    if( session->loglevel >= 5 ){
-      *(session->logfile) << "CVT :: Flattening to " << output_channels << " channel"
-			  << ((output_channels>1) ? "s" : "") << " in "
-			  << function_timer.getTime() << " microseconds" << endl;
+      if( session->loglevel >= 5 ){
+        *(session->logfile) << "CVT :: Flattening to " << output_channels << " channel"
+  			  << ((output_channels>1) ? "s" : "") << " in "
+  			  << function_timer.getTime() << " microseconds" << endl;
+      }
     }
   }
-
 
   // Convert to greyscale if requested
   if( (*session->image)->getColourSpace() == sRGB && session->view->colourspace == GREYSCALE ){

@@ -196,14 +196,14 @@ void JTL::send( Session* session, int resolution, int tile ){
 
 
     // Apply normalization and float conversion
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << "JTL :: Normalizing and converting to float";
-      function_timer.start();
-    }
-    session->processor->normalize( rawtile, max, min );
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
-    }
+    // if( session->loglevel >= 4 ){
+    //   *(session->logfile) << "JTL :: Normalizing and converting to float";
+    //   function_timer.start();
+    // }
+    // session->processor->normalize( rawtile, max, min );
+    // if( session->loglevel >= 4 ){
+    //   *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+    // }
 
 
     // Apply hill shading if requested
@@ -272,42 +272,44 @@ void JTL::send( Session* session, int resolution, int tile ){
     }
 
     // Apply any contrast adjustments
-    float contrast = session->view->contrast;
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << "JTL :: Applying contrast of " << contrast;
-      function_timer.start();
-    }
-    session->processor->contrast( rawtile, contrast );
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
-    }
+    // float contrast = session->view->contrast;
+    // if( session->loglevel >= 4 ){
+    //   *(session->logfile) << "JTL :: Applying contrast of " << contrast;
+    //   function_timer.start();
+    // }
+    // session->processor->contrast( rawtile, contrast );
+    // if( session->loglevel >= 4 ){
+    //   *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+    // }
 
     // clip from 16bit or 32bit to 8bit if needed
-    unsigned int b = 8;
-    if (session->loglevel >= 4) {
-      *(session->logfile) << "JTL :: Converting to " << b << "bit";
+    if ( session->view->output_format != TIFF_ ){
+      unsigned int b = 8;
+      if (session->loglevel >= 4) {
+        *(session->logfile) << "JTL :: Converting to " << b << "bit";
+      }
+      session->processor->clip( rawtile, b );
+      if( session->loglevel >= 4 ){
+        *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+      }
     }
-    session->processor->clip( rawtile, b );
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
-    }
-
   }
 
 
   // Reduce to 1 or 3 bands if we have an alpha channel or a multi-band image
-  if( rawtile.channels == 2 || rawtile.channels > 3 ){
-    unsigned int bands = (rawtile.channels==2) ? 1 : 3;
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << "JTL :: Flattening channels to " << bands;
-      function_timer.start();
-    }
-    session->processor->flatten( rawtile, bands );
-    if( session->loglevel >= 4 ){
-      *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+  if ( session->view->output_format != TIFF_ ){
+    if( rawtile.channels == 2 || rawtile.channels > 3 ){
+      unsigned int bands = (rawtile.channels==2) ? 1 : 3;
+      if( session->loglevel >= 4 ){
+        *(session->logfile) << "JTL :: Flattening channels to " << bands;
+        function_timer.start();
+      }
+      session->processor->flatten( rawtile, bands );
+      if( session->loglevel >= 4 ){
+        *(session->logfile) << " in " << function_timer.getTime() << " microseconds" << endl;
+      }
     }
   }
-
 
   // Convert to greyscale if requested
   if( (*session->image)->getColourSpace() == sRGB && session->view->colourspace == GREYSCALE ){
@@ -474,6 +476,8 @@ void JTL::send( Session* session, int resolution, int tile ){
     unsigned int bytes_pp = complete_image.bpc / 8;
     unsigned char* output = new unsigned char[bytes_pp*resampled_width*channels*strip_height+65536];
     int strips = (resampled_height/strip_height) + (resampled_height%strip_height == 0 ? 0 : 1);
+
+    *(session->logfile) << "JTL:: bytes_pp  = " << bytes_pp << " strips = " << strips << " dataLength = " << complete_image.dataLength << endl; 
 
     for( int n=0; n<strips; n++ ){
 

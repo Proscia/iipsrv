@@ -143,8 +143,11 @@ void TIFFCompressor::InitCompression( const RawTile &rawtile, unsigned int strip
   TIFFSetField(dest->tiff, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(dest->tiff, strip_height));
   TIFFSetField(dest->tiff, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
   TIFFSetField(dest->tiff, TIFFTAG_COMPRESSION, tiff_compression);
+  if (rawtile.sampleType == FLOATINGPOINT){
+    TIFFSetField(dest->tiff, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+  }
 
-  if (channels == 1)
+  if (channels == 1 || channels > 3)
     TIFFSetField(dest->tiff, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
   else if (channels == 3)
     TIFFSetField(dest->tiff, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);

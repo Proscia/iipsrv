@@ -23,7 +23,10 @@
 
 #include "QPTIFFImage.h"
 #include <sstream>
+#include <iostream>
+#include <fstream>
 
+extern std::ofstream logfile;
 
 using namespace std;
 
@@ -83,14 +86,30 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
   TIFFGetField( tiff, TIFFTAG_PHOTOMETRIC, &colour );
   TIFFGetField( tiff, TIFFTAG_SAMPLEFORMAT, &sampleformat );
 
-  // We have to do this conversion explicitly to avoid problems on Mac OS X
-  channels = (unsigned int) samplesperpixel;
+  if ( samplesperpixel == 1 ){
+    channels = 0;
+
+    unsigned int w1 = w, h1 = h;
+    while ( w1 == w && h1 == h ){
+      TIFFReadDirectory( tiff );
+      TIFFGetField( tiff, TIFFTAG_IMAGEWIDTH, &w1 );
+      TIFFGetField( tiff, TIFFTAG_IMAGELENGTH, &h1 );
+      channels++;
+      logfile << "QPTIFFImage:: " << "Dir w " << w1 << " Chan " << channels << endl;
+    }
+  }
+  else {
+    channels = 3;
+  }
+
+  logfile << "QPTIFFImage:: " << "Channels: " << channels << endl;
+
   bpc = (unsigned int) bitspersample;
   sampleType = (sampleformat==3) ? FLOATINGPOINT : FIXEDPOINT;
 
-  // Check for the no. of resolutions in the pyramidal image
-  current_dir = TIFFCurrentDirectory( tiff );
-  TIFFSetDirectory( tiff, 0 );
+  // // Check for the no. of resolutions in the pyramidal image
+  // current_dir = TIFFCurrentDirectory( tiff );
+  // TIFFSetDirectory( tiff, 0 );
 
   // Store the list of image dimensions available
   image_widths.push_back( w );
@@ -101,6 +120,9 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
     TIFFGetField( tiff, TIFFTAG_IMAGELENGTH, &h );
     image_widths.push_back( w );
     image_heights.push_back( h );
+    current_dir = TIFFCurrentDirectory( tiff );
+    TIFFSetDirectory( tiff, current_dir + channels );
+    logfile << "QPTIFFImage:: " << "Channels: " << count << " w " << w << endl;
   }
   // Reset the TIFF directory
   TIFFSetDirectory( tiff, current_dir );
@@ -197,6 +219,8 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
   string filename;
 
 
+  logfile << "QPTIFFIMAGE:: getTile begin" << endl;
+
   // Check the resolution exists
   if( res > numResolutions ){
     ostringstream error;
@@ -232,9 +256,16 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
   //  the smallest image first.
   int vipsres = ( numResolutions - 1 ) - res;
 
+  // because we have N directories per resolution and because the N+1th directory is the thumbnail
+  int tiff_dir = vipsres * channels;
+  if ( tiff_dir > 0 ) {
+    tiff_dir += 1;
+  }
+
+  logfile << "QPTIFFIMAGE:: tiff_dir = " << tiff_dir << " bpc = " << bpc << endl;
 
   // Change to the right directory for the resolution
-  if( !TIFFSetDirectory( tiff, vipsres ) ) {
+  if( !TIFFSetDirectory( tiff, tiff_dir ) ) {
     throw file_error( "TIFFSetDirectory failed" );
   }
 
@@ -310,25 +341,68 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
   }
   else colourspace = sRGB;
 
+  logfile << "QPTIFFImage:: TIFFTileSize = " << TIFFTileSize(tiff) << endl;
+  tsize_t tile_size = TIFFTileSize(tiff);
+
+  tdata_t *channels_tile_bufs = new tdata_t[channels];
+  for ( int i = 0; i < channels; i++ ) {
+    if( ( channels_tile_bufs[i] = _TIFFmalloc ( tile_size ) ) == NULL ) {
+      throw file_error( "tiff malloc tile failed" );
+    }
+    int length = TIFFReadEncodedTile( tiff, (ttile_t) tile,
+            channels_tile_bufs[i], (tsize_t) - 1 );
+    if( length == -1 ) {
+      throw file_error( "TIFFReadEncodedTile failed for " + getFileName( seq, ang ) );
+    }
+    TIFFReadDirectory( tiff );
+  }   
 
   // Allocate memory for our tile.
   if( !tile_buf ){
-    if( ( tile_buf = _TIFFmalloc( TIFFTileSize(tiff) ) ) == NULL ){
+    logfile << "QPTIFFIMAGE:: tile_buf size = " << tile_size * channels << endl;
+    if( ( tile_buf = _TIFFmalloc( tile_size * channels ) ) == NULL ){
       throw file_error( "tiff malloc tile failed" );
     }
   }
 
+  logfile << "QPTIFFIMAGE:: tiles read into channels_tile_bufs" << endl;
+
   // Decode and read the tile
-  int length = TIFFReadEncodedTile( tiff, (ttile_t) tile,
-				    tile_buf, (tsize_t) - 1 );
-  if( length == -1 ) {
-    throw file_error( "TIFFReadEncodedTile failed for " + getFileName( seq, ang ) );
+  // int length = TIFFReadEncodedTile( tiff, (ttile_t) tile,
+		// 		    tile_buf, (tsize_t) - 1 );
+  // if( length == -1 ) {
+  //   throw file_error( "TIFFReadEncodedTile failed for " + getFileName( seq, ang ) );
+  // }
+
+  for ( int i = 0; i < np; i++ ){
+    for ( int c = 0; c < channels; c++ ){
+      if (bpc == 32) {
+        if (sampleType == FLOATINGPOINT) {
+          ((float *)tile_buf)[i * channels + c] = ((float *)channels_tile_bufs[c])[i];
+        }
+        else {
+          ((unsigned int *)tile_buf)[i * channels + c] = ((unsigned int *)channels_tile_bufs[c])[i];
+        }
+      }
+      else if (bpc == 16) {
+        ((unsigned short *)tile_buf)[i * channels + c] = ((unsigned short *)channels_tile_bufs[c])[i];
+      }
+      else {
+        ((unsigned char *)tile_buf)[i * channels + c] = ((unsigned char *)channels_tile_bufs[c])[i];
+      }
+    }
   }
 
+  for ( int i = 0; i < channels; i++ ){
+    _TIFFfree(channels_tile_bufs[i]);
+  }
+  delete channels_tile_bufs;
+
+  logfile << " QPTIFFImage:: bpc = " << bpc << endl;
 
   RawTile rawtile( tile, res, seq, ang, tw, th, channels, bpc );
   rawtile.data = tile_buf;
-  rawtile.dataLength = length;
+  rawtile.dataLength = tile_size * channels;
   rawtile.filename = getImagePath();
   rawtile.timestamp = timestamp;
   rawtile.memoryManaged = 0;

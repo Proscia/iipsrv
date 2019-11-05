@@ -236,7 +236,7 @@ void CVT::send( Session* session ){
   unsigned int original_bpc = complete_image.bpc;
 
   // Only use our floating point pipeline if necessary
-  if( complete_image.bpc > 8 || session->view->floatProcessing() ){
+  if( 0/*complete_image.bpc > 8 || session->view->floatProcessing() */){
 
 
     // Make a copy of our max and min as we may change these
@@ -347,7 +347,7 @@ void CVT::send( Session* session ){
 
 
     // clip from 16bit or 32bit to 8bit if needed
-    //if ( session->view->output_format != TIFF_ ){
+    if ( session->view->output_format != TIFF_ ){
       if( session->loglevel >=5 ) function_timer.start();
       unsigned int b = 8;
       if ( session->view->output_format == TIFF_ ) {
@@ -364,7 +364,7 @@ void CVT::send( Session* session ){
         *(session->logfile) << "CVT :: Converting to " << b << "bit in "
                             << function_timer.getTime() << " microseconds" << endl;
       }
-    //}
+    }
   }
 
 
@@ -517,7 +517,6 @@ void CVT::send( Session* session ){
     }
     compressor->setXMPMetadata( (*session->image)->getMetadata("xmp") );
   }
-
 
   // Initialise our output compression object
   unsigned int strip_height = 128;

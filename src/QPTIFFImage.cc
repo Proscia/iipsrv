@@ -118,6 +118,10 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
   for( count = 0; TIFFReadDirectory( tiff ); count++ ){
     TIFFGetField( tiff, TIFFTAG_IMAGEWIDTH, &w );
     TIFFGetField( tiff, TIFFTAG_IMAGELENGTH, &h );
+    // ignore downsamples smaller than 2K x 2K
+    if (w < 2000 && h < 2000) {
+      break;
+    }
     image_widths.push_back( w );
     image_heights.push_back( h );
     current_dir = TIFFCurrentDirectory( tiff );

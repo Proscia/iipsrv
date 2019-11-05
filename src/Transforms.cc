@@ -612,6 +612,7 @@ void Transform::interpolate_bilinear( RawTile& in, unsigned int resampled_width,
 
   // Pointer to input buffer
   unsigned int *iinput = NULL;
+  float *finput = NULL;
   unsigned short *sinput = NULL;
   unsigned char *cinput = NULL;
 
@@ -623,6 +624,7 @@ void Transform::interpolate_bilinear( RawTile& in, unsigned int resampled_width,
 
   // Create new buffer and pointer for our output
   unsigned int *ioutput = NULL;
+  float *foutput = NULL;
   unsigned short *soutput = NULL;
   unsigned char *coutput = NULL;
 
@@ -630,7 +632,11 @@ void Transform::interpolate_bilinear( RawTile& in, unsigned int resampled_width,
   float xscale = (float)(width) / (float)resampled_width;
   float yscale = (float)(height) / (float)resampled_height;
 
-  if (bpc == 32) {
+  if (in.sampleType == FLOATINGPOINT && bpc == 32) {
+    finput = (float *) in.data;
+    foutput = new float[resampled_width*resampled_height*in.channels];
+  }
+  else if (bpc == 32) {
     iinput = (unsigned int*) in.data;
     ioutput = new unsigned int[resampled_width*resampled_height*in.channels];
   }
@@ -685,7 +691,15 @@ void Transform::interpolate_bilinear( RawTile& in, unsigned int resampled_width,
       // Output buffer index
       unsigned int resampled_index = j*resampled_width*in.channels + i*in.channels;
 
-      if (bpc == 32) {
+      if (in.sampleType == FLOATINGPOINT && bpc == 32) {
+        for( int k=0; k<in.channels; k++ ){
+          float tx = finput[p11+k]*a + finput[p21+k]*b;
+          float ty = finput[p12+k]*a + finput[p22+k]*b;
+          float r = (float)( c*tx + d*ty );
+          foutput[resampled_index+k] = r;
+        }
+      }
+      else if (bpc == 32) {
         for( int k=0; k<in.channels; k++ ){
           float tx = iinput[p11+k]*a + iinput[p21+k]*b;
           float ty = iinput[p12+k]*a + iinput[p22+k]*b;
@@ -713,7 +727,8 @@ void Transform::interpolate_bilinear( RawTile& in, unsigned int resampled_width,
   }
 
   // Delete original buffer
-  if (bpc == 32) delete[] iinput;
+  if (in.sampleType == FLOATINGPOINT && bpc == 32) delete[] finput;
+  else if (bpc == 32) delete[] iinput;
   else if (bpc == 16) delete[] sinput;
   else delete[] cinput;
 
@@ -722,7 +737,8 @@ void Transform::interpolate_bilinear( RawTile& in, unsigned int resampled_width,
   in.height = resampled_height;
   in.dataLength = resampled_width * resampled_height * channels * (in.bpc/8);
 
-  if (bpc == 32) in.data = ioutput;
+  if (in.sampleType == FLOATINGPOINT && bpc == 32) in.data = foutput;
+  else if (bpc == 32) in.data = ioutput;
   else if (bpc == 16) in.data = soutput;
   else in.data = coutput;
 }

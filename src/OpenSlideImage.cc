@@ -292,13 +292,13 @@ void OpenSlideImage::downsample_region( openslide_t *osr, unsigned int *buf, lon
     logfile << "openslide_downsampling bestLayer " << bestLayer << std::endl;
 #endif
     // allocate a buffer large enough to hold the best layer
-    unsigned int *tmpbuf = (unsigned int *) malloc( ceil( w * downSamplingFactor )
-                                                    * ceil( h * downSamplingFactor ) * 4 );
+    unsigned int *tmpbuf = (unsigned int *) malloc( floor( w * downSamplingFactor )
+                                                    * floor( h * downSamplingFactor ) * 4 );
     if ( !tmpbuf )
       throw string( "FATAL : OpenSlideImage downsample_region => allocation memory ERROR" );
 
-    openslide_read_region( osr, tmpbuf, x, y, bestLayer, ceil( w * downSamplingFactor ),
-                           ceil( h * downSamplingFactor ));
+    openslide_read_region( osr, tmpbuf, x, y, bestLayer, floor( w * downSamplingFactor ),
+                           floor( h * downSamplingFactor ));
 
     // Debugging output Before Downsampling/
     //    char tileFileName[MAX_PATH];
@@ -312,8 +312,8 @@ void OpenSlideImage::downsample_region( openslide_t *osr, unsigned int *buf, lon
     int row, col;
     for ( row = 0; row < h; row++ ) {
       unsigned int *dest = buf + (unsigned long) (w * row);
-      unsigned int *src = tmpbuf + (unsigned long) (ceil( w * downSamplingFactor )
-                                                    * ceil( row * downSamplingFactor ));
+      unsigned int *src = tmpbuf + (unsigned long) (floor( w * downSamplingFactor )
+                                                    * floor( row * downSamplingFactor ));
       unsigned int *cdest = src, *csrc = src;
       for ( col = 1; col < w; col++ ) {
         *(cdest + (unsigned long) col) = *(csrc + (unsigned long) (col * downSamplingFactor));

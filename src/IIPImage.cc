@@ -128,6 +128,9 @@ void IIPImage::testImageType()
     if (find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
       format = OPENSLIDE;
     }
+	else if (/* suffix == "czi" or "CZI" */) {
+	  format = CZI;
+	}
     else
 #endif
     {

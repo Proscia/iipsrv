@@ -75,4 +75,6 @@ iipsrv_fcgi_SOURCES = \
 			Logger.h \
 			Memcached.h \
 			QPTIFFImage.h \
-			QPTIFFImage.cc
+			QPTIFFImage.cc \
+			CZIImage.h \
+			CZIImage.cc

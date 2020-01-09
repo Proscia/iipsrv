@@ -30,6 +30,12 @@ if ENABLE_MODULES
 iipsrv_fcgi_LDADD += DSOImage.o
 endif
 
+## TODO(Leo) Clean-up usage of non-standard /home/leo include paths.
+## Forced include of libCZI libraries.
+INCLUDES += -I/home/leo/GitHub/Leo311/libCZI/Src/libCZI
+## Forced link of libCZI libraries.
+iipsrv_fcgi_LDADD += /home/leo/GitHub/Leo311/libCZI/Src/libCZI/liblibCZIStatic.a /home/leo/GitHub/Leo311/libCZI/Src/JxrDecode/libJxrDecodeStatic.a
+
 EXTRA_iipsrv_fcgi_SOURCES = DSOImage.h DSOImage.cc KakaduImage.h KakaduImage.cc Main.cc OpenJPEGImage.h OpenJPEGImage.cc PNGCompressor.h PNGCompressor.cc OpenSlideImage.h OpenSlideImage.cc
 
 iipsrv_fcgi_SOURCES = \

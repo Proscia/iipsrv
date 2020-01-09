@@ -25,11 +25,19 @@
 
 
 #include "IIPImage.h"
-#include <czi.h>
-#include <cziio.h>
 
+//#include "libCZI.h"
+// TODO(Leo) Install libCZI and add include path to IIPSRV build.
+//#include "/home/leo/GitHub/Leo311/libCZI/Src/libCZI/libCZI.h"
+#include "libCZI.h"
+#include <tiffio.h>  // tdata_t
 
-
+// TODO(Leo) Add libCZI libraries to link command:
+//    /home/leo/GitHub/Leo311/libCZI/Src/libCZI/liblibCZIStatic.a
+//    /home/leo/GitHub/Leo311/libCZI/Src/JxrDecode/libJxrDecodeStatic.a
+/*
+/bin/bash ../libtool  --tag=CXX   --mode=link g++ -std=gnu++0x -g -O2   -o iipsrv.fcgi IIPImage.o TPTImage.o JPEGCompressor.o TIFFCompressor.o TileManager.o IIPResponse.o View.o Transforms.o Task.o OBJ.o FIF.o JTL.o TIL.o ICC.o CVT.o Zoomify.o DeepZoom.o SPECTRA.o PFL.o IIIF.o Watermark.o QPTIFFImage.o CZIImage.o Main.o  OpenJPEGImage.o PNGCompressor.o  OpenSlideImage.o  -lnsl -lopenslide -lpng -lmemcached -lz  -lm -fopenmp -lpthread -lopenjp2 ../fcgi/libfcgi/libfcgi.a  -ljpeg -ltiff -lm /home/leo/GitHub/Leo311/libCZI/Src/libCZI/liblibCZIStatic.a /home/leo/GitHub/Leo311/libCZI/Src/JxrDecode/libJxrDecodeStatic.a
+*/
 
 /// Image class for Tiled Pyramidal Images: Inherits from IIPImage. Uses libczi
 class CZIImage : public IIPImage {
@@ -37,26 +45,24 @@ class CZIImage : public IIPImage {
  private:
 
   /// Pointer to the CZI library struct
-  CZI *czi;
+  std::shared_ptr<libCZI::ICZIReader> czi_reader;
 
   /// Tile data buffer pointer
   tdata_t tile_buf;
 
-
  public:
-
   /// Constructor
-  CZIImage():IIPImage(), czi( NULL ), tile_buf( NULL ) {};
+  CZIImage():IIPImage(), czi_reader( NULL ), tile_buf( NULL ) {};
 
   /// Constructor
   /** @param path image path
    */
-  CZIImage( const std::string& path ): IIPImage( path ), czi( NULL ), tile_buf( NULL ) {};
+  CZIImage( const std::string& path ): IIPImage( path ), czi_reader( NULL ), tile_buf( NULL ) {};
 
   /// Copy Constructor
   /** @param image IIPImage object
    */
-  CZIImage( const CZIImage& image ): IIPImage( image ), czi( NULL ),tile_buf( NULL ) {};
+  CZIImage( const CZIImage& image ): IIPImage( image ), czi_reader( NULL ),tile_buf( NULL ) {};
 
   /// Assignment Operator
   /** @param image CZIImage object
@@ -65,7 +71,7 @@ class CZIImage : public IIPImage {
     if( this != &image ){
       closeImage();
       IIPImage::operator=(image);
-      czi = image.czi;
+      czi_reader = image.czi_reader;
       tile_buf = image.tile_buf;
     }
     return *this;
@@ -75,23 +81,21 @@ class CZIImage : public IIPImage {
   /** @param image IIPImage object
    */
   CZIImage( const IIPImage& image ): IIPImage( image ) {
-    czi = NULL; tile_buf = NULL; 
+    czi_reader = NULL; tile_buf = NULL; 
   };
 
   /// Destructor
   ~CZIImage() { closeImage(); };
 
-  /// Overloaded function for opening a CZI image
+  /// Overloaded functions for opening and closing a CZI image
   void openImage();
+  void closeImage();
 
   /// Overloaded function for loading CZI image information
   /** @param x horizontal sequence angle
       @param y vertical sequence angle
    */
   void loadImageInfo( int x, int y );
-
-  /// Overloaded function for closing a CZI image
-  void closeImage();
 
   /// Overloaded function for getting a particular tile
   /** @param x horizontal sequence angle
@@ -102,7 +106,8 @@ class CZIImage : public IIPImage {
    */
   RawTile getTile( int x, int y, unsigned int r, int l, unsigned int t );
 
+#if 0  // TODO(Leo)
+#endif // TODO(Leo)
 };
-
 
 #endif

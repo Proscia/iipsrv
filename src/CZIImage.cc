@@ -30,13 +30,11 @@ extern std::ofstream logfile;
 
 using namespace std;
 
-
 void CZIImage::openImage()
 {
-
-  // Insist that the czi and tile_buf be NULL
-  if( czi || tile_buf ){
-    throw file_error( "TPT::openImage: czi or tile_buf is not NULL" );
+  // Insist that the czi_reader and tile_buf be NULL
+  if( czi_reader || tile_buf ){
+    throw file_error( "CZIImage::openImage(): czi_reader or tile_buf is not NULL" );
   }
 
   string filename = getFileName( currentX, currentY );
@@ -44,10 +42,11 @@ void CZIImage::openImage()
   // Update our timestamp
   updateTimestamp( filename );
 
-  // Try to open and allocate a buffer
-  if( ( czi = CZIOpen( filename.c_str(), "rm" ) ) == NULL ){
-    throw file_error( "czi open failed for: " + filename );
-  }
+  // Try to open and allocate a CZI-reader.
+  std::wstring wide_filename = std::wstring(filename.begin(), filename.end());
+  auto stream = libCZI::CreateStreamFromFile(wide_filename.c_str());
+  czi_reader = libCZI::CreateCZIReader();
+  czi_reader->Open(stream);
 
   // Load our metadata if not already loaded
   if( bpc == 0 ) loadImageInfo( currentX, currentY );
@@ -58,12 +57,72 @@ void CZIImage::openImage()
   }
 
   isSet = true;
+}
 
+void CZIImage::closeImage()
+{
+  if( czi_reader != NULL ){
+	czi_reader->Close();
+    czi_reader = NULL;
+  }
+  if( tile_buf != NULL ){
+    _TIFFfree( tile_buf );
+    tile_buf = NULL;
+  }
 }
 
 
-void CZIImage::loadImageInfo( int seq, int ang )
+
+void CZIImage::loadImageInfo( int x, int y )
 {
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
+  /// The image pixel dimensions
+  std::vector <unsigned int> image_widths, image_heights;
+
+  /// The base tile pixel dimensions
+  unsigned int tile_width, tile_height;
+
+  /// The colour space of the image
+  ColourSpaces colourspace;
+
+  /// The number of available resolutions in this image
+  // CZIcmd --source ../AC5537\ \ insulin\ CD4.czi --command PrintInformation --info-level 'PyramidStatistics'
+  unsigned int numResolutions;  // --command PrintInformation --info-level 'PyramidStatistics'
+
+  /// The bits per channel for this image
+  unsigned int bpc;
+
+  /// The number of channels for this image
+  // CZIcmd --source ../1_CD3645_Ins594_Glu488_DAPI_IS4612.czi --command PrintInformation --info-level 'Statistics'
+  //     C -> Start=0 Size=4
+  unsigned int channels;
+
+  /// The sample format type (fixed or floating point)
+  SampleType sampleType;
+
+  /// The min and max sample value for each channel
+  std::vector <float> min, max;
+
+  /// Quality layers
+  unsigned int quality_layers;  // Not used for CZI.
+
+  /// Indicate whether we have opened and initialised some parameters for this image
+  bool isSet;  // Done - CZIImage::openImage()
+
+  /// If we have an image sequence, the current X and Y position
+  int currentX, currentY;  // Below
+
+  /// Image histogram
+  std::vector<unsigned int> histogram;  // Not needed here.
+
+  /// STL map to hold string metadata
+  std::map <const std::string, std::string> metadata;
+
+  /// Image modification timestamp
+  time_t timestamp;  // Done - CZIImage::openImage() .. updateTimestamp()
+#endif // TODO(Leo)
+
+#if 0  // TODO(Leo)
   tdir_t current_dir;
   int count;
   uint16 colour, samplesperpixel, bitspersample, sampleformat;
@@ -73,10 +132,19 @@ void CZIImage::loadImageInfo( int seq, int ang )
   string filename;
   char *tmp = NULL;
 
-  currentX = seq;
-  currentY = ang;
+  currentX = x;
+  currentY = y;
 
   // Get the tile and image sizes
+#if 0  // TODO(Leo)
+  // TODO(Leo)
+  /*
+	CZICmd for appropriate metadata???
+	    Extract width and height from CZIcmd Statistics!!!
+CZIcmd --source "${DOWNLOAD}" \
+		   --command PrintInformation --info-level 'Statistics'
+  */
+#endif // TODO(Leo)
   CZIGetField( czi, CZITAG_TILEWIDTH, &tile_width );
   CZIGetField( czi, CZITAG_TILELENGTH, &tile_height );
   CZIGetField( czi, CZITAG_IMAGEWIDTH, &w );
@@ -199,24 +267,15 @@ void CZIImage::loadImageInfo( int seq, int ang )
   if( CZIGetField( czi, CZITAG_XMLPACKET, &count, &tmp ) ) metadata["xmp"] = string(tmp,count);
   if( CZIGetField( czi, CZITAG_ICCPROFILE, &count, &tmp ) ) metadata["icc"] = string(tmp,count);
 
+#endif // TODO(Leo)
 }
 
-
-void CZIImage::closeImage()
+RawTile CZIImage::getTile( int x, int y, unsigned int res, int layers, unsigned int tile )
 {
-  if( czi != NULL ){
-    CZIClose( czi );
-    czi = NULL;
-  }
-  if( tile_buf != NULL ){
-    _CZIfree( tile_buf );
-    tile_buf = NULL;
-  }
-}
+  return RawTile();
 
+#if 0  // TODO(Leo)
 
-RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsigned int tile )
-{
   uint32 im_width, im_height, tw, th, ntlx, ntly;
   uint32 rem_x, rem_y;
   uint16 colour;
@@ -235,14 +294,14 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsig
 
   // If we are currently working on a different sequence number, then
   //  close and reload the image.
-  if( (currentX != seq) || (currentY != ang) ){
+  if( (currentX != x) || (currentY != y) ){
     closeImage();
   }
 
 
   // Open the CZI if it's not already open
   if( !czi ){
-    filename = getFileName( seq, ang );
+    filename = getFileName( x, y );
     if( ( czi = CZIOpen( filename.c_str(), "rm" ) ) == NULL ){
       throw file_error( "czi open failed for:" + filename );
     }
@@ -250,8 +309,8 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsig
 
 
   // Reload our image information in case the tile size etc is different
-  if( (currentX != seq) || (currentY != ang) ){
-    loadImageInfo( seq, ang );
+  if( (currentX != x) || (currentY != y) ){
+    loadImageInfo( x, y );
   }
 
 
@@ -356,7 +415,7 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsig
     int length = CZIReadEncodedTile( czi, (ttile_t) tile,
             channels_tile_bufs[i], (tsize_t) - 1 );
     if( length == -1 ) {
-      throw file_error( "CZIReadEncodedTile failed for " + getFileName( seq, ang ) );
+      throw file_error( "CZIReadEncodedTile failed for " + getFileName( x, y ) );
     }
     CZIReadDirectory( czi );
   }   
@@ -373,9 +432,9 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsig
 
   // Decode and read the tile
   // int length = CZIReadEncodedTile( czi, (ttile_t) tile,
-		// 		    tile_buf, (tsize_t) - 1 );
+  //   tile_buf, (tsize_t) - 1 );
   // if( length == -1 ) {
-  //   throw file_error( "CZIReadEncodedTile failed for " + getFileName( seq, ang ) );
+  //   throw file_error( "CZIReadEncodedTile failed for " + getFileName( x, y ) );
   // }
 
   for ( int i = 0; i < np; i++ ){
@@ -404,7 +463,7 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsig
 
   logfile << " CZIImage:: bpc = " << bpc << endl;
 
-  RawTile rawtile( tile, res, seq, ang, tw, th, channels, bpc );
+  RawTile rawtile( tile, res, x, y, tw, th, channels, bpc );
   rawtile.data = tile_buf;
   rawtile.dataLength = tile_size * channels;
   rawtile.filename = getImagePath();
@@ -437,8 +496,8 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsig
       unsigned char t = ((unsigned char*)tile_buf)[i];
       // Count backwards as CZI is usually MSB2LSB
       for( int k=7; k>=0; k-- ){
-	// Set values depending on whether bit is set
-	buffer[n++] = (t & (1 << k)) ? max : min;
+        // Set values depending on whether bit is set
+        buffer[n++] = (t & (1 << k)) ? max : min;
       }
     }
 
@@ -451,5 +510,6 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int layers, unsig
 
   return( rawtile );
 
-}
+#endif // TODO(Leo)
 
+}

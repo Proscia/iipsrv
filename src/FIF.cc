@@ -25,6 +25,7 @@
 #include "Environment.h"
 #include "TPTImage.h"
 #include "QPTIFFImage.h"
+#include "CZIImage.h"
 
 #ifdef HAVE_OPENSLIDE
 #include "OpenSlideImage.h"
@@ -149,6 +150,10 @@ void FIF::run( Session* session, const string& src ){
     else if ( format == QPTIFF ) {
       if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: QPTIFF image detected" << endl;
       *session->image = new QPTIFFImage( test );
+    }
+    else if ( format == CZI ) {
+      if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: CZI image detected" << endl;
+      *session->image = new CZIImage( test );
     }
 #if defined(HAVE_KAKADU) || defined(HAVE_OPENJPEG)
     else if( format == JPEG2000 ){

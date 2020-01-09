@@ -22,7 +22,10 @@
 
 
 #include "IIPImage.h"
-#include "QPTIFFImage.h"
+#if 0  // TODO(Leo)  Remove, replace w. <tiffio.h>
+//#include "QPTIFFImage.h"
+#endif
+#include <tiffio.h>  // TIFFOpen(), TIFFClose(), TIFFGetField(), TIFFTAG_SOFTWARE
 
 #ifdef HAVE_OPENSLIDE
 #include "OpenSlideImage.h"
@@ -128,9 +131,9 @@ void IIPImage::testImageType()
     if (find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
       format = OPENSLIDE;
     }
-	else if (/* suffix == "czi" or "CZI" */) {
-	  format = CZI;
-	}
+    else if (suffix == "czi") {
+      format = CZI;
+	  }
     else
 #endif
     {

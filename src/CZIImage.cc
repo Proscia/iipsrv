@@ -75,51 +75,291 @@ void CZIImage::closeImage()
 
 void CZIImage::loadImageInfo( int x, int y )
 {
+  currentX = x;
+  currentY = y;
+
+  auto mds = czi_reader->ReadMetadataSegment();
+  auto md = mds->CreateMetaFromMetadataSegment();
+
+  auto sbStatistics = czi_reader->GetStatistics();
+
+  // Store the list of image dimensions available
+  // See:  CZICmd/execute.cpp -- PrintStatistics().
+  ////unsigned int full_width = sbStatistics.boundingBox.w;
+  ////unsigned int full_height = sbStatistics.boundingBox.h;
+  unsigned int full_width = sbStatistics.boundingBoxLayer0Only.w;
+  unsigned int full_height = sbStatistics.boundingBoxLayer0Only.h;
+  image_widths.push_back( full_width );
+  image_heights.push_back( full_height );
+  numResolutions = 1;
+
+  // CZI pyramid layers as virtual width x height images.
+  // See:  CZICmd/execute.cpp -- PrintPyramidStatistics().
+  auto pyrStatistics = czi_reader->GetPyramidStatistics();
+  auto scene0PyrStatistics = pyrStatistics.scenePyramidStatistics[0];
+  for (const auto& j : scene0PyrStatistics) {
+    if (!j.layerInfo.IsNotIdentifiedAsPyramidLayer()) {
+      if (j.layerInfo.IsLayer0() != true) {
+        int scale = j.layerInfo.minificationFactor;
+        for (int n = 1; n < j.layerInfo.pyramidLayerNo; ++n) {
+          scale *= j.layerInfo.minificationFactor;
+        }
+
+		// Scaled down dimensions [rounded up with (.. -1)/scale +1]
+		unsigned int w = (full_width -1)/scale +1;
+		unsigned int h = (full_height -1)/scale +1;
+		// Ignore downsamples smaller than 2K x 2K.  TODO(Leo) Why?  Ask Coleman.
+		if (w < 2000 && h < 2000) {
+		  break;
+		}
+
+		image_widths.push_back( w );
+		image_heights.push_back( h );
+		++numResolutions;
+      }
+    }
+  }
 #if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// The image pixel dimensions
   std::vector <unsigned int> image_widths, image_heights;
+  /*
+	static void PrintStatistics(const CCmdLineOptions& options, ICZIReader* reader)
+		WriteIntRect(ss, sbStatistics.boundingBox);
 
+
+18_WT1_NKPP002_01_R_LS.czi.PrintInformation.txt
+Bounding-Box:
+ All:    X=0 Y=0 W=98172 H=66096
+ Layer0: X=0 Y=0 W=98097 H=65963
+
+scene#0:
+ number of subblocks with scale 1/1: 2550
+ number of subblocks with scale 1/3: 919
+ number of subblocks with scale 1/9: 116
+ number of subblocks with scale 1/27: 17
+ number of subblocks with scale 1/81: 3
+ number of subblocks with scale 1/243: 1
+
+>>> 98172/243.
+404.0
+>>> 66096/243.
+272.0
+
+
+GR57-13 2015_10_12__0078.czi.PrintInformation.txt
+Bounding-Box:
+ All:    X=-134078 Y=9180 W=119630 H=48000
+ Layer0: X=-134078 Y=9180 W=119625 H=47998
+
+scene#0:
+ number of subblocks with scale 1/1: 1311
+ number of subblocks with scale 1/2: 1221
+ number of subblocks with scale 1/4: 333
+ number of subblocks with scale 1/8: 99
+ number of subblocks with scale 1/16: 30
+ number of subblocks with scale 1/32: 12
+ number of subblocks with scale 1/64: 3
+
+scene#1:
+ number of subblocks with scale 1/1: 1182
+ number of subblocks with spcale 1/2: 1110
+ number of subblocks with scale 1/4: 303
+ number of subblocks with scale 1/8: 90
+ number of subblocks with scale 1/16: 33
+ number of subblocks with scale 1/32: 12
+ number of subblocks with scale 1/64: 3
+
+>>> 119630/64
+1869.21875
+>>> 48000/64
+750.0
+>>> 119630/4 
+29907.5
+
+
+1_CD3645_Ins594_Glu488_DAPI_IS4612.czi.PrintInformation.txt
+Bounding-Box:
+ All:    X=-111996 Y=34869 W=5731 H=7580
+ Layer0: X=-111996 Y=34869 W=5731 H=7580
+
+scene#0:
+ number of subblocks with scale 1/1: 480
+ number of subblocks with scale 1/2: 480
+ number of subblocks with scale 1/4: 160
+ number of subblocks with scale 1/8: 40
+
+>>> 7580/8
+947.5
+>>> 5731/8
+716.375
+>>> 7580/4
+1895.0
+>>> 5731/4
+1432.75
+  */
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+  // CZI images are not stored as grids of tiles;
+  // virtual tiles will be created on the fly.
+  tile_width = 1024;
+  tile_height = 1024;
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// The base tile pixel dimensions
   unsigned int tile_width, tile_height;
+  /*
+CZI aren't arranged as tiles, so output a default virtual tile dimensions, e.g.: 728x728 or 1024x1024
+  */
 
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// The colour space of the image
   ColourSpaces colourspace;
+  /*
+execute.cpp:: static void PrintDisplaySettingsForChannel(int ch, IChannelDisplaySetting* dsplChSettings, const CCmdLineOptions& options)
 
+Complete list of sub-blocks
+---------------------------
+
+#0: C0S0B0 M=0 logical=(0,0,98172,66096) phys.=(404,272) pixeltype=bgr24 comp.mode=jpgxr
+
+
+$ grep -Po 'pixeltype=\S+|^ C -> Start=\d+ Size=\d+' -r | sort | uniq -c
+      1 18_WT1_NKPP002_01_R_LS.czi.PrintInformation.txt: C -> Start=0 Size=1
+   3606 18_WT1_NKPP002_01_R_LS.czi.PrintInformation.txt:pixeltype=bgr24
+      1 1_CD3645_Ins594_Glu488_DAPI_IS4612.czi.PrintInformation.txt: C -> Start=0 Size=4
+   1160 1_CD3645_Ins594_Glu488_DAPI_IS4612.czi.PrintInformation.txt:pixeltype=gray16
+  */
+
+
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// The number of available resolutions in this image
   // CZIcmd --source ../AC5537\ \ insulin\ CD4.czi --command PrintInformation --info-level 'PyramidStatistics'
   unsigned int numResolutions;  // --command PrintInformation --info-level 'PyramidStatistics'
+  /*
+	static void PrintPyramidStatistics(ICZIReader* reader, const CCmdLineOptions& options)
 
+      1 18_WT1_NKPP002_01_R_LS.czi.PrintInformation.txt: C -> Start=0 Size=1
+  */
+
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// The bits per channel for this image
   unsigned int bpc;
 
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// The number of channels for this image
   // CZIcmd --source ../1_CD3645_Ins594_Glu488_DAPI_IS4612.czi --command PrintInformation --info-level 'Statistics'
   //     C -> Start=0 Size=4
   unsigned int channels;
 
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// The sample format type (fixed or floating point)
   SampleType sampleType;
 
-  /// The min and max sample value for each channel
-  std::vector <float> min, max;
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
 
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
+  /// The min and max sample value for each channel
+  std::vector <float> min, max;  // Maybe --info-level 'DisplaySettings' ???
+  /*
+$ CZIcmd --command PrintInformation --info-level DisplaySettingsJSON --source ../18_WT1_NKPP002_01_R_LS.czi 
+Display-Settings in CZIcmd-JSON-Format
+--------------------------------------
+
+
+Pretty-Print:
+{
+    "channels": [
+        {
+            "ch": 0,
+            "black-point": 0.0,
+            "white-point": 1.0
+        }
+    ]
+}
+
+Compact:
+{"channels":[{"ch":0,"black-point":0.0,"white-point":1.0}]}
+
+
+$ CZIcmd --command PrintInformation --info-level DisplaySettingsJSON --source ../GR57-13\ 2015_10_12__0078.czi 
+Display-Settings in CZIcmd-JSON-Format
+--------------------------------------
+
+
+Pretty-Print:
+{
+    "channels": [
+        {
+            "ch": 0,
+            "black-point": 0.0,
+            "white-point": 0.900952398777008,
+            "tinting": "#0000ff"
+        },
+        {
+            "ch": 1,
+            "black-point": 0.000053032286814413965,
+            "white-point": 0.2518841624259949,
+            "tinting": "#00ff5b"
+        },
+        {
+            "ch": 2,
+            "black-point": 0.00008445332059636712,
+            "white-point": 0.2818259298801422,
+            "tinting": "#ff0000"
+        }
+    ]
+}
+
+Compact:
+{"channels":[{"ch":0,"black-point":0.0,"white-point":0.9009523987770081,"tinting":"#0000ff"},{"ch":1,"black-point":0.000053032286814413965,"white-point":0.2518841624259949,"tinting":"#00ff5b"},{"ch":2,"black-point":0.00008445332059636712,"white-point":0.2818259298801422,"tinting":"#ff0000"}]}
+  */
+
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// Quality layers
-  unsigned int quality_layers;  // Not used for CZI.
+  //  unsigned int quality_layers;  // Not used for CZI.
 
   /// Indicate whether we have opened and initialised some parameters for this image
-  bool isSet;  // Done - CZIImage::openImage()
+  //  bool isSet;  // Done - CZIImage::openImage()
 
   /// If we have an image sequence, the current X and Y position
-  int currentX, currentY;  // Below
+  //  int currentX, currentY;  // Below
 
   /// Image histogram
-  std::vector<unsigned int> histogram;  // Not needed here.
+  //  std::vector<unsigned int> histogram;  // Not needed here.
 
+#endif // TODO(Leo)  IIPImage metadata to be initialized.
+
+#if 0  // TODO(Leo)  IIPImage metadata to be initialized.
   /// STL map to hold string metadata
   std::map <const std::string, std::string> metadata;
+  /*
+$ CZIcmd --command PrintInformation --info-level GeneralInfo --source ../GR57-13\ 2015_10_12__0078.czi 
+General Information
+-------------------
+
+Name=
+Title=
+UserName=cgib
+Description=
+Comment=
+Keywords=
+Rating=0
+CreationDate=2015-10-12T14:05:54.4916631-07:00
+  */
 
   /// Image modification timestamp
-  time_t timestamp;  // Done - CZIImage::openImage() .. updateTimestamp()
+  //  time_t timestamp;  // Done - CZIImage::openImage() .. updateTimestamp()
 #endif // TODO(Leo)
 
 #if 0  // TODO(Leo)

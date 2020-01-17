@@ -44,7 +44,8 @@ void CZIImage::openImage()
   // Update our timestamp
   updateTimestamp( filename );
 
-  // Try to open and allocate a CZI-reader.
+  // Try to allocate and open a CZI-reader.
+  // See:  CZICmd/execute.cpp -- class CExecuteBase -- CreateAndOpenCziReader().
   std::wstring wide_filename = std::wstring(filename.begin(), filename.end());
   auto stream = libCZI::CreateStreamFromFile(wide_filename.c_str());
   czi_reader = libCZI::CreateCZIReader();
@@ -331,41 +332,30 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
 
 RawTile CZIImage::getTile( int x, int y, unsigned int res, int layers, unsigned int tile )
 {
-  return RawTile();
-
-#if 0  // TODO(Leo)
-
-  uint32 im_width, im_height, tw, th, ntlx, ntly;
-  uint32 rem_x, rem_y;
-  uint16 colour;
-  string filename;
-
-
-  logfile << "CZIIMAGE:: getTile begin" << endl;
+  logfile << "CZIImage:: getTile begin" << endl;
 
   // Check the resolution exists
-  if( res > numResolutions ){
+  if( res > (numResolutions - 1) ){
     ostringstream error;
     error << "CZIImage :: Asked for non-existent resolution: " << res;
     throw file_error( error.str() );
   }
 
-
-  // If we are currently working on a different sequence number, then
-  //  close and reload the image.
+  // If we are currently working on a different sequence number,
+  // then close and reload the image.
   if( (currentX != x) || (currentY != y) ){
     closeImage();
   }
 
-
-  // Open the CZI if it's not already open
-  if( !czi ){
-    filename = getFileName( x, y );
-    if( ( czi = CZIOpen( filename.c_str(), "rm" ) ) == NULL ){
-      throw file_error( "czi open failed for:" + filename );
-    }
+  // Allocate and open the CZI if it's not already open.
+  if( !czi_reader ){
+    string filename = getFileName( x, y );
+	updateTimestamp( filename );
+	std::wstring wide_filename = std::wstring(filename.begin(), filename.end());
+	auto stream = libCZI::CreateStreamFromFile(wide_filename.c_str());
+	czi_reader = libCZI::CreateCZIReader();
+	czi_reader->Open(stream);
   }
-
 
   // Reload our image information in case the tile size etc is different
   if( (currentX != x) || (currentY != y) ){
@@ -373,10 +363,130 @@ RawTile CZIImage::getTile( int x, int y, unsigned int res, int layers, unsigned 
   }
 
 
-  // The first resolution is the highest, so we need to invert
-  //  the resolution - can avoid this if we store our images with
-  //  the smallest image first.
-  int vipsres = ( numResolutions - 1 ) - res;
+  // The first CZI layer is the highest resolution,
+  // so we need to invert the resolution index:
+  //   0 [lowest resolution] <= res <= (numResolutions - 1) [highest resolution]
+  int czi_layer = (numResolutions - 1) - res;
+
+  unsigned int image_width = image_widths[czi_layer];
+  unsigned int image_height = image_heights[czi_layer];
+
+  // CZI images are not stored as grids of tiles,
+  // so create virtual tile grid on the fly.
+
+#if 0  // TODO(Leo)
+  /*
+				CZIcmd --source "${UPLOAD}" \
+					--command ChannelComposite \
+					--rect "rel($X,$Y,$W,$H)" \
+					${PLANE} ${DISPLAY_CHANNEL} \
+					--background ${BACKGROUND} \
+					--output "${OUTPUT}"
+
+CZIcmd --source ../../8_PPIB_NKPP002_01_R_LS.czi \
+    --command SingleChannelPyramidTileAccessor \
+    --rect 'rel(40960,40960,2048,2048)' \
+    --background 0.9 \
+    --plane-coordinate C0 \
+    --pyramidinfo 3,0 \
+    --output 8_PPIB_NKPP002_01_R_LS.czi--command-SingleChannelPyramidTileAccessor--rect-rel40960,40960,2048,2048--background0.9--plane-coordinate-C0--pyramidinfo-3,0
+
+CZIcmd --source ../../8_PPIB_NKPP002_01_R_LS.czi \
+    --command SingleChannelPyramidTileAccessor \
+    --rect 'rel(40960,40960,6144,6144)' \
+    --background 0.9 \
+    --plane-coordinate C0 \
+    --pyramidinfo 3,1 \
+    --output 8_PPIB_NKPP002_01_R_LS.czi--command-SingleChannelPyramidTileAccessor--rect-rel40960,40960,6144,6144--background0.9--plane-coordinate-C0--pyramidinfo-3,1
+
+CZIcmd --source ../../8_PPIB_NKPP002_01_R_LS.czi \
+    --command SingleChannelPyramidTileAccessor \
+    --rect 'rel(40960,40960,18432,18432)' \
+    --background 0.9 \
+    --plane-coordinate C0 \
+    --pyramidinfo 3,2 \
+    --output 8_PPIB_NKPP002_01_R_LS.czi--command-SingleChannelPyramidTileAccessor--rect-rel40960,40960,18432,18432--background0.9--plane-coordinate-C0--pyramidinfo-3,2
+
+CZIcmd --source ../../8_PPIB_NKPP002_01_R_LS.czi \
+    --command SingleChannelPyramidTileAccessor \
+    --rect 'rel(0,0,102546,73629)' \
+    --background 0.9 \
+    --plane-coordinate C0 \
+    --pyramidinfo 3,4 \
+    --output 8_PPIB_NKPP002_01_R_LS.czi--command-SingleChannelPyramidTileAccessor--rect-rel0,0,102546,73629--background0.9--plane-coordinate-C0--pyramidinfo-3,4
+  */
+#endif // TODO(Leo)
+
+  // [Use (.. -1)/.. +1 to round up the division.]
+  unsigned int num_cols = (image_width -1)/tile_width +1;
+  unsigned int num_rows = (image_height -1)/tile_height +1;
+
+  // Check that a valid tile number was given
+  if( tile >= num_cols * num_rows ) {
+    ostringstream tile_no;
+    tile_no << "Asked for non-existent tile: " << tile;
+    throw file_error( tile_no.str() );
+  }
+
+  // Get grid (col, row) and tile upper-left (x, y) coordinates.
+  unsigned int grid_col = tile % num_cols;
+  unsigned int grid_row = tile / num_cols;
+  unsigned int tile_x = grid_col * tile_width;
+  unsigned int tile_y = grid_row * tile_height;
+
+  // Get pixel dimensions of this tile, which can be smaller than the
+  // default tile dimensions for edge tiles.
+  unsigned int tile_w = image_width - tile_x;  // Distance to edge.
+  if (tile_width < tile_w) tile_w = tile_width;
+  unsigned int tile_h = image_height - tile_y;  // Distance to edge.
+  if (tile_height < tile_h) tile_h = tile_height;
+
+  // Number of pixels for this tile.
+  unsigned int num_pixels = tile_w * tile_h; 
+
+
+  // See:  CZICmd/execute.cpp -- class CExecuteSingleChannelPyramidTileAccessor -- execute().
+  auto subBlockStatistics = czi_reader->GetStatistics();
+  auto accessor = czi_reader->CreateSingleChannelPyramidLayerTileAccessor();
+
+  unsigned int scale = 1; // TODO(Leo) get from minification stuff.
+  int logical_x = tile_x * scale + subBlockStatistics.boundingBox.x;
+  int logical_y = tile_y * scale + subBlockStatistics.boundingBox.y;
+  int logical_w = tile_w * scale;
+  int logical_h = tile_h * scale;
+  libCZI::IntRect rect{logical_x, logical_y, logical_w, logical_h};
+
+  //libCZI::CDimCoordinate coordinate = options.GetPlaneCoordinate();
+
+  libCZI::ISingleChannelScalingTileAccessor::Options scstaOptions;
+  scstaOptions.Clear();
+
+  libCZI::RgbFloatColor bright_bkgd{ 0.9, 0.9, 0.9 };  // For brightfield images.
+  libCZI::RgbFloatColor fluor_bkgd{ 0.0, 0.0, 0.0 };  // For fluorescence channels.
+  scstaOptions.backGroundColor = (channels == 1 ? bright_bkgd : fluor_bkgd);
+
+  //  scptaOptions.sceneFilter = options.GetSceneIndexSet();
+
+  libCZI::ISingleChannelPyramidLayerTileAccessor::PyramidLayerInfo pyrLyrInfo;
+  //  pyrLyrInfo.minificationFactor = options.GetPyramidInfoMinificationFactor();
+  pyrLyrInfo.pyramidLayerNo = czi_layer;
+
+  //  auto re = accessor->Get(rect, &coordinate, pyrLyrInfo, &scptaOptions);
+
+
+  
+  return RawTile();
+
+
+
+
+  
+#if 0  // TODO(Leo)
+
+  uint32 im_width, im_height, tw, th, ntlx, ntly;
+  uint32 rem_x, rem_y;
+  uint16 colour;
+  string filename;
 
   // because we have N directories per resolution and because the N+1th directory is the thumbnail
   int czi_dir = vipsres * channels;
@@ -531,40 +641,6 @@ RawTile CZIImage::getTile( int x, int y, unsigned int res, int layers, unsigned 
   rawtile.padded = true;
   rawtile.sampleType = sampleType;
 
-
-  // Pad 1 bit 1 channel bilevel images to 8 bits for output
-  if( bpc==1 && channels==1 ){
-
-    // Pixel index
-    unsigned int n = 0;
-
-    // Calculate number of bytes used - round integer up efficiently
-    unsigned int nbytes = (np + 7) / 8;
-    unsigned char *buffer = new unsigned char[np];
-
-    // Take into account photometric interpretation:
-    //   0: white is zero, 1: black is zero
-    unsigned char min = (unsigned char) 0;
-    unsigned char max = (unsigned char) 255;
-    if( colour == 0 ){
-      min = (unsigned char) 255; max = (unsigned char) 0;
-    }
-
-    // Unpack each raw byte into 8 8-bit pixels
-    for( unsigned int i=0; i<nbytes; i++ ){
-      unsigned char t = ((unsigned char*)tile_buf)[i];
-      // Count backwards as CZI is usually MSB2LSB
-      for( int k=7; k>=0; k-- ){
-        // Set values depending on whether bit is set
-        buffer[n++] = (t & (1 << k)) ? max : min;
-      }
-    }
-
-    rawtile.dataLength = n;
-    rawtile.data = buffer;
-    rawtile.bpc = 8;
-    rawtile.memoryManaged = 1;
-  }
 
 
   return( rawtile );

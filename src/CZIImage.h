@@ -39,6 +39,9 @@
 /bin/bash ../libtool  --tag=CXX   --mode=link g++ -std=gnu++0x -g -O2   -o iipsrv.fcgi IIPImage.o TPTImage.o JPEGCompressor.o TIFFCompressor.o TileManager.o IIPResponse.o View.o Transforms.o Task.o OBJ.o FIF.o JTL.o TIL.o ICC.o CVT.o Zoomify.o DeepZoom.o SPECTRA.o PFL.o IIIF.o Watermark.o QPTIFFImage.o CZIImage.o Main.o  OpenJPEGImage.o PNGCompressor.o  OpenSlideImage.o  -lnsl -lopenslide -lpng -lmemcached -lz  -lm -fopenmp -lpthread -lopenjp2 ../fcgi/libfcgi/libfcgi.a  -ljpeg -ltiff -lm /home/leo/GitHub/Leo311/libCZI/Src/libCZI/liblibCZIStatic.a /home/leo/GitHub/Leo311/libCZI/Src/JxrDecode/libJxrDecodeStatic.a
 */
 
+#define CZIIMAGE_DEFAULT_TILE_WIDTH   (1024)
+#define CZIIMAGE_DEFAULT_TILE_HEIGHT  (1024)
+
 /// Image class for Tiled Pyramidal Images: Inherits from IIPImage. Uses libczi
 class CZIImage : public IIPImage {
 
@@ -47,22 +50,37 @@ class CZIImage : public IIPImage {
   /// Pointer to the CZI library struct
   std::shared_ptr<libCZI::ICZIReader> czi_reader;
 
+  /// CZI info passed from CZIImage::loadImageInfo() to CZIImage::getTile().
+  int channels_start;  // Use IIPImage::channels for channels_size.
+  int z_layers_start;
+  int z_layers_size;
+  std::uint8_t image_minification;
+  std::vector <unsigned int> image_scales;
+
   /// Tile data buffer pointer
   tdata_t tile_buf;
 
+  void tweakLine(libCZI::PixelType pixel_type, std::uint32_t width, void* ptrData);
+
  public:
   /// Constructor
-  CZIImage():IIPImage(), czi_reader( NULL ), tile_buf( NULL ) {};
+  CZIImage(): IIPImage(),
+	czi_reader( NULL ), tile_buf( NULL ),
+	channels_start(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {};
 
   /// Constructor
   /** @param path image path
    */
-  CZIImage( const std::string& path ): IIPImage( path ), czi_reader( NULL ), tile_buf( NULL ) {};
+  CZIImage( const std::string& path ): IIPImage( path ),
+	czi_reader( NULL ), tile_buf( NULL ),
+	channels_start(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {};
 
   /// Copy Constructor
   /** @param image IIPImage object
    */
-  CZIImage( const CZIImage& image ): IIPImage( image ), czi_reader( NULL ),tile_buf( NULL ) {};
+  CZIImage( const CZIImage& image ): IIPImage( image ),
+	czi_reader( NULL ),tile_buf( NULL ),
+	channels_start(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {};
 
   /// Assignment Operator
   /** @param image CZIImage object

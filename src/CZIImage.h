@@ -26,6 +26,12 @@
 
 #include "IIPImage.h"
 
+#include <sstream>
+#include <iostream>
+#include <fstream>
+using namespace std;
+extern std::ofstream logfile;
+
 //#include "libCZI.h"
 // TODO(Leo) Install libCZI and add include path to IIPSRV build.
 //#include "/home/leo/GitHub/Leo311/libCZI/Src/libCZI/libCZI.h"
@@ -52,6 +58,7 @@ class CZIImage : public IIPImage {
 
   /// CZI info passed from CZIImage::loadImageInfo() to CZIImage::getTile().
   int channels_start;  // Use IIPImage::channels for channels_size.
+  int channels_size;  // CZI concept of channel size, which may not be same as IIPImage::channels.
   int z_layers_start;
   int z_layers_size;
   std::uint8_t image_minification;
@@ -63,34 +70,52 @@ class CZIImage : public IIPImage {
   void tweakLine(libCZI::PixelType pixel_type, std::uint32_t width, void* ptrData);
 
  public:
-  /// Constructor
+  /// Default Constructor
   CZIImage(): IIPImage(),
 	czi_reader( NULL ), tile_buf( NULL ),
-	channels_start(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {};
+	channels_start(-1), channels_size(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {
+	logfile << "CZIImage::CZIImage()" << endl;
+  };
 
-  /// Constructor
+  /// Constructer taking the image path as parameter
   /** @param path image path
    */
   CZIImage( const std::string& path ): IIPImage( path ),
 	czi_reader( NULL ), tile_buf( NULL ),
-	channels_start(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {};
+	channels_start(-1), channels_size(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {
+	logfile << "CZIImage::CZIImage( const std::string& path )" << endl;
+  };
 
-  /// Copy Constructor
+  /// Copy Constructor taking reference to another CZIImage object
   /** @param image IIPImage object
    */
   CZIImage( const CZIImage& image ): IIPImage( image ),
 	czi_reader( NULL ),tile_buf( NULL ),
-	channels_start(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {};
+	channels_start( image.channels_start ),
+	channels_size( image.channels_size ),
+	z_layers_start( image.z_layers_start ),
+	z_layers_size( image.z_layers_size ),
+	image_minification( image.image_minification ),
+    image_scales( image.image_scales ) {
+	logfile << "CZIImage::CZIImage( const CZIImage& image )" << endl;
+  };
 
   /// Assignment Operator
   /** @param image CZIImage object
    */
   CZIImage& operator = ( CZIImage image ) {
     if( this != &image ){
+	  logfile << "CZIImage::operator = ( CZIImage image )" << endl;
       closeImage();
       IIPImage::operator=(image);
       czi_reader = image.czi_reader;
       tile_buf = image.tile_buf;
+	  channels_start = image.channels_start;
+	  channels_size = image.channels_size;
+	  z_layers_start = image.z_layers_start;
+	  z_layers_size = image.z_layers_size;
+	  image_minification = image.image_minification;
+	  image_scales = image.image_scales;
     }
     return *this;
   }
@@ -99,11 +124,23 @@ class CZIImage : public IIPImage {
   /** @param image IIPImage object
    */
   CZIImage( const IIPImage& image ): IIPImage( image ) {
-    czi_reader = NULL; tile_buf = NULL; 
+	logfile << "CZIImage::CZIImage( const IIPImage& image )" << endl;
+    czi_reader = NULL; tile_buf = NULL;
+	channels_start = -1;
+    channels_size = -1;
+    z_layers_start = -1;
+    z_layers_size = -1;
+    image_minification = -1;
   };
 
   /// Destructor
-  ~CZIImage() { closeImage(); };
+  //  ~CZIImage() { closeImage(); };
+  ~CZIImage() {
+	logfile << "CZIImage::~CZIImage() begin" << endl;
+	closeImage();
+	logfile << "CZIImage::~CZIImage() end" << endl;
+  };
+  //  ~CZIImage();
 
   /// Overloaded functions for opening and closing a CZI image
   void openImage();

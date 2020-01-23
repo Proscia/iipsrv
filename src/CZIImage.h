@@ -45,8 +45,16 @@ extern std::ofstream logfile;
 /bin/bash ../libtool  --tag=CXX   --mode=link g++ -std=gnu++0x -g -O2   -o iipsrv.fcgi IIPImage.o TPTImage.o JPEGCompressor.o TIFFCompressor.o TileManager.o IIPResponse.o View.o Transforms.o Task.o OBJ.o FIF.o JTL.o TIL.o ICC.o CVT.o Zoomify.o DeepZoom.o SPECTRA.o PFL.o IIIF.o Watermark.o QPTIFFImage.o CZIImage.o Main.o  OpenJPEGImage.o PNGCompressor.o  OpenSlideImage.o  -lnsl -lopenslide -lpng -lmemcached -lz  -lm -fopenmp -lpthread -lopenjp2 ../fcgi/libfcgi/libfcgi.a  -ljpeg -ltiff -lm /home/leo/GitHub/Leo311/libCZI/Src/libCZI/liblibCZIStatic.a /home/leo/GitHub/Leo311/libCZI/Src/JxrDecode/libJxrDecodeStatic.a
 */
 
+#if 1  // TODO(Leo) reset to best values
 #define CZIIMAGE_DEFAULT_TILE_WIDTH   (1024)
 #define CZIIMAGE_DEFAULT_TILE_HEIGHT  (1024)
+#elif 0  // TODO(Leo) reset to best values
+#define CZIIMAGE_DEFAULT_TILE_WIDTH   (512)
+#define CZIIMAGE_DEFAULT_TILE_HEIGHT  (512)
+#elif 0  // TODO(Leo) reset to best values
+#define CZIIMAGE_DEFAULT_TILE_WIDTH   (2048)
+#define CZIIMAGE_DEFAULT_TILE_HEIGHT  (2048)
+#endif // TODO(Leo) reset to best values
 
 /// Image class for Tiled Pyramidal Images: Inherits from IIPImage. Uses libczi
 class CZIImage : public IIPImage {
@@ -66,13 +74,19 @@ class CZIImage : public IIPImage {
 
   /// Tile data buffer pointer
   tdata_t tile_buf;
+  tmsize_t tile_size;
 
+  void tile_malloc(tmsize_t size);
   void tweakLine(libCZI::PixelType pixel_type, std::uint32_t width, void* ptrData);
+
+  RawTile getSingleChannelPyramidLayerTile(
+    int seq, int ang, unsigned int res, int layers, unsigned int tile,
+	int czi_layer, libCZI::IntRect roi, unsigned int tile_w, unsigned int tile_h);
 
  public:
   /// Default Constructor
   CZIImage(): IIPImage(),
-	czi_reader( NULL ), tile_buf( NULL ),
+	czi_reader( NULL ), tile_buf( NULL ), tile_size(0),
 	channels_start(-1), channels_size(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {
 	logfile << "CZIImage::CZIImage()" << endl;
   };
@@ -81,7 +95,7 @@ class CZIImage : public IIPImage {
   /** @param path image path
    */
   CZIImage( const std::string& path ): IIPImage( path ),
-	czi_reader( NULL ), tile_buf( NULL ),
+	czi_reader( NULL ), tile_buf( NULL ), tile_size(0),
 	channels_start(-1), channels_size(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {
 	logfile << "CZIImage::CZIImage( const std::string& path )" << endl;
   };
@@ -90,7 +104,7 @@ class CZIImage : public IIPImage {
   /** @param image IIPImage object
    */
   CZIImage( const CZIImage& image ): IIPImage( image ),
-	czi_reader( NULL ),tile_buf( NULL ),
+	czi_reader( NULL ), tile_buf( NULL ), tile_size(0),
 	channels_start( image.channels_start ),
 	channels_size( image.channels_size ),
 	z_layers_start( image.z_layers_start ),
@@ -110,6 +124,7 @@ class CZIImage : public IIPImage {
       IIPImage::operator=(image);
       czi_reader = image.czi_reader;
       tile_buf = image.tile_buf;
+      tile_size = image.tile_size;
 	  channels_start = image.channels_start;
 	  channels_size = image.channels_size;
 	  z_layers_start = image.z_layers_start;
@@ -125,7 +140,7 @@ class CZIImage : public IIPImage {
    */
   CZIImage( const IIPImage& image ): IIPImage( image ) {
 	logfile << "CZIImage::CZIImage( const IIPImage& image )" << endl;
-    czi_reader = NULL; tile_buf = NULL;
+    czi_reader = NULL; tile_buf = NULL; tile_size = 0;
 	channels_start = -1;
     channels_size = -1;
     z_layers_start = -1;

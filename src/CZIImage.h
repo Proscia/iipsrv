@@ -80,8 +80,12 @@ class CZIImage : public IIPImage {
   void tweakLine(libCZI::PixelType pixel_type, std::uint32_t width, void* ptrData);
 
   RawTile getSingleChannelPyramidLayerTile(
-    int seq, int ang, unsigned int res, int layers, unsigned int tile,
+    int seq, int ang, unsigned int res, unsigned int tile, int z_layer,
 	int czi_layer, libCZI::IntRect roi, unsigned int tile_w, unsigned int tile_h);
+
+  RawTile getAllChannelsPyramidLayerTile(
+    int seq, int ang, unsigned int res, unsigned int tile, int z_layer,
+    int czi_layer, libCZI::IntRect roi, unsigned int tile_w, unsigned int tile_h);
 
  public:
   /// Default Constructor

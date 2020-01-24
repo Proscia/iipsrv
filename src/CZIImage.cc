@@ -683,116 +683,17 @@ CZIcmd -s../../GR57-13\ 2015_10_12__0078.czi \
   logfile << ", logical_h = " << logical_h;
   logfile << endl;
 
+  int z_layer = 0;  // For now, just first Z-layer.
+
   if (channels_size == 1 || true) {
-#if 1  // TODO(Leo)
-    return getSingleChannelPyramidLayerTile(seq,  ang, res, layers, tile,
-                                            czi_layer, roi, tile_w, tile_h);
-#else
-    // Single CZI channel (usu. brightfield, Bgr24).
-    logfile << "CZIImage::getTile() G2" << endl;
-
-    /// For brightfield images, using SingleChannelPyramidTileAccessor works well.
-    // See:  CZICmd/execute.cpp -- class CExecuteSingleChannelPyramidTileAccessor -- execute().
-    auto accessor = czi_reader->CreateSingleChannelPyramidLayerTileAccessor();
-
-    libCZI::CDimCoordinate coordinate;
-    if (channels_size > 0)
-      coordinate.Set(libCZI::DimensionIndex::C, channels_start + 0);  // For now, just first Channel.
-    if (z_layers_size > 0)
-      coordinate.Set(libCZI::DimensionIndex::Z, z_layers_start + 0);  // For now, just first Z-layer.
-
-    logfile << "CZIImage::getTile() H" << endl;
-
-    libCZI::ISingleChannelPyramidLayerTileAccessor::Options scptaOptions;
-    scptaOptions.Clear();
-    libCZI::RgbFloatColor bright_bkgd{ 0.9, 0.9, 0.9 };  // Light for brightfield images.
-    libCZI::RgbFloatColor fluor_bkgd{ 0.0, 0.0, 0.0 };  // Black for fluorescence channels.
-    scptaOptions.backGroundColor = (channels_size == 1 ? bright_bkgd : fluor_bkgd);
-    //  scptaOptions.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
-
-    libCZI::ISingleChannelPyramidLayerTileAccessor::PyramidLayerInfo pyrLyrInfo;
-    pyrLyrInfo.minificationFactor = image_minification;
-    pyrLyrInfo.pyramidLayerNo = czi_layer;
-
-    logfile << "CZIImage::getTile() I" << endl;
-
-    // std::shared_ptr<libCZI::IBitmapData>
-    auto bitmap = accessor->Get(roi, &coordinate, pyrLyrInfo, &scptaOptions);
-
-    logfile << "CZIImage::getTile() I++, bitmap";
-    logfile << ": width = " << bitmap->GetWidth();
-    logfile << ", height = " << bitmap->GetHeight();
-    logfile << ", pixel type = " << (int) bitmap->GetPixelType();
-    logfile << ", size = " << bitmap->GetSize();
-    logfile << endl;
-
-    // See:  CZICmd/SaveBitmap.cpp
-    //    -- CSaveData::Save(), CSaveData::SaveBgr24(), CSaveData::SaveGray16(),
-    //    -- CSaveData::SavePngTweakLineBeforeWritng(), CSaveData::SavePng()
-    libCZI::ScopedBitmapLockerP lckScoped{bitmap.get()};
-
-    logfile << "CZIImage::getTile() J, lckScoped";
-    logfile << ": stride = " << lckScoped.stride;
-    logfile << ", size = " << lckScoped.size;
-    logfile << endl;
-
-#if 0  // TODO(Leo)
-    // Allocate memory for our tile.
-    if( !tile_buf ){
-      if( ( tile_buf = _TIFFmalloc( lckScoped.size ) ) == NULL ){
-        throw file_error( "tiff malloc tile failed" );
-      }
-    }
-#else  // TODO(Leo)
-    tile_malloc( lckScoped.size );
-#endif // TODO(Leo)
-
-    logfile << "CZIImage::getTile() K" << endl;
-
-    std::unique_ptr<void,decltype(&free)> lineToTweak(malloc(lckScoped.stride),&free);
-    for (std::uint32_t h = 0; h < bitmap->GetHeight(); ++h) {
-      void *roi_ptr = (((char *) lckScoped.ptrDataRoi) + h * lckScoped.stride);
-      memcpy(lineToTweak.get(), roi_ptr, lckScoped.stride);
-      tweakLine(bitmap->GetPixelType(), bitmap->GetWidth(), lineToTweak.get());
-
-      void *tile_buf_ptr = (((char *) tile_buf) + h * lckScoped.stride);
-      memcpy(tile_buf_ptr, lineToTweak.get(), lckScoped.stride);
-    }
-
-    logfile << "CZIImage::getTile() L, RawTile()";
-    logfile << ", tile = " << tile;
-    logfile << ", res = " << res;
-    logfile << ", seq = " << seq;
-    logfile << ", ang = " << ang;
-    logfile << ", tile_w = " << tile_w;
-    logfile << ", tile_h = " << tile_h;
-    logfile << ", channels = " << channels;
-    logfile << ", bpc = " << bpc;
-    logfile << endl;
-
-    RawTile rawtile( tile, res, seq, ang, tile_w, tile_h, channels, bpc );
-    rawtile.data = tile_buf;
-    rawtile.dataLength = lckScoped.size;
-    rawtile.filename = getImagePath();
-    rawtile.timestamp = timestamp;
-    rawtile.memoryManaged = 0;
-    //rawtile.padded = true;  // TODO(Leo) Huh? Why padded for QPTIFF, not for OpenSlide?
-    rawtile.sampleType = sampleType;
-
-    logfile << "CZIImage::getTile() M" << endl;
-    logfile << "CZIImage::getTile() end [channels_size == " << channels_size << "]" << endl;
-
-    return rawtile;
-#endif // TODO(Leo)
+	// Single CZI channel (usu. brightfield, Bgr24).
+    return getSingleChannelPyramidLayerTile(seq,  ang, res, tile, z_layer,
+											czi_layer, roi, tile_w, tile_h);
   }
   else {
-    // Multiple CZI channels (usu. fluorescence, Gray16).
-    logfile << "CZIImage::getTile() g2" << endl;
-
-    /// For fluorescence images, ScalingChannelComposite works well.
-    // See:  CZICmd/execute.cpp -- class CExecuteScalingChannelComposite -- execute().
-
-    logfile << "CZIImage::getTile() end [channels_size == " << channels_size << "]" << endl;
+	// Multiple CZI channels (usu. fluorescence, Gray16).
+	return getAllChannelsPyramidLayerTile(seq, ang, res, tile, z_layer,
+										  czi_layer, roi, tile_w, tile_h);
   }
 
 
@@ -802,24 +703,24 @@ CZIcmd -s../../GR57-13\ 2015_10_12__0078.czi \
 }
 
 
+// Single CZI channel (usu. brightfield, Bgr24).
 RawTile CZIImage::getSingleChannelPyramidLayerTile(
-    int seq, int ang, unsigned int res, int layers, unsigned int tile,
+    int seq, int ang, unsigned int res, unsigned int tile, int z_layer,
     int czi_layer, libCZI::IntRect roi, unsigned int tile_w, unsigned int tile_h)
 {
-  // Single CZI channel (usu. brightfield, Bgr24).
-  logfile << "CZIImage::getTile() G2" << endl;
+  logfile << __FILE__ << " -- " << __FUNCTION__ << " -- " << __LINE__ << endl;
 
-  /// For brightfield images, using SingleChannelPyramidTileAccessor works well.
+  /// For brightfield images, using Command::SingleChannelPyramidTileAccessor works well.
   // See:  CZICmd/execute.cpp -- class CExecuteSingleChannelPyramidTileAccessor -- execute().
   auto accessor = czi_reader->CreateSingleChannelPyramidLayerTileAccessor();
 
   libCZI::CDimCoordinate coordinate;
   if (channels_size > 0)
-    coordinate.Set(libCZI::DimensionIndex::C, channels_start + 0);  // For now, just first Channel.
+    coordinate.Set(libCZI::DimensionIndex::C, channels_start);
   if (z_layers_size > 0)
-    coordinate.Set(libCZI::DimensionIndex::Z, z_layers_start + 0);  // For now, just first Z-layer.
+    coordinate.Set(libCZI::DimensionIndex::Z, z_layers_start + z_layer);
 
-  logfile << "CZIImage::getTile() H" << endl;
+  logfile << "CZIImage::getSingleChannelPyramidLayerTile() A" << endl;
 
   libCZI::ISingleChannelPyramidLayerTileAccessor::Options scptaOptions;
   scptaOptions.Clear();
@@ -832,12 +733,12 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
   pyrLyrInfo.minificationFactor = image_minification;
   pyrLyrInfo.pyramidLayerNo = czi_layer;
 
-  logfile << "CZIImage::getTile() I" << endl;
+  logfile << "CZIImage::getSingleChannelPyramidLayerTile() B" << endl;
 
   // std::shared_ptr<libCZI::IBitmapData>
   auto bitmap = accessor->Get(roi, &coordinate, pyrLyrInfo, &scptaOptions);
 
-  logfile << "CZIImage::getTile() I++, bitmap";
+  logfile << "CZIImage::getSingleChannelPyramidLayerTile() C, bitmap";
   logfile << ": width = " << bitmap->GetWidth();
   logfile << ", height = " << bitmap->GetHeight();
   logfile << ", pixel type = " << (int) bitmap->GetPixelType();
@@ -849,7 +750,7 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
   //    -- CSaveData::SavePngTweakLineBeforeWritng(), CSaveData::SavePng()
   libCZI::ScopedBitmapLockerP lckScoped{bitmap.get()};
 
-  logfile << "CZIImage::getTile() J, lckScoped";
+  logfile << "CZIImage::getSingleChannelPyramidLayerTile() D, lckScoped";
   logfile << ": stride = " << lckScoped.stride;
   logfile << ", size = " << lckScoped.size;
   logfile << endl;
@@ -865,7 +766,7 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
   tile_malloc( lckScoped.size );
 #endif // TODO(Leo)
 
-  logfile << "CZIImage::getTile() K" << endl;
+  logfile << "CZIImage::getSingleChannelPyramidLayerTile() E" << endl;
 
   std::unique_ptr<void,decltype(&free)> lineToTweak(malloc(lckScoped.stride),&free);
   for (std::uint32_t h = 0; h < bitmap->GetHeight(); ++h) {
@@ -877,7 +778,7 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
     memcpy(tile_buf_ptr, lineToTweak.get(), lckScoped.stride);
   }
 
-  logfile << "CZIImage::getTile() L, RawTile()";
+  logfile << "CZIImage::getSingleChannelPyramidLayerTile() F, RawTile()";
   logfile << ", tile = " << tile;
   logfile << ", res = " << res;
   logfile << ", seq = " << seq;
@@ -897,8 +798,38 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
   //rawtile.padded = true;  // TODO(Leo) Huh? Why padded for QPTIFF, not for OpenSlide?
   rawtile.sampleType = sampleType;
 
-  logfile << "CZIImage::getTile() M" << endl;
-  logfile << "CZIImage::getTile() end [channels_size == " << channels_size << "]" << endl;
+  logfile << "CZIImage::getSingleChannelPyramidLayerTile() end [channels_size == " << channels_size << "]" << endl;
 
   return rawtile;
 }
+
+
+// Multiple CZI channels (usu. fluorescence, Gray16).
+RawTile CZIImage::getAllChannelsPyramidLayerTile(
+    int seq, int ang, unsigned int res, unsigned int tile, int z_layer,
+    int czi_layer, libCZI::IntRect roi, unsigned int tile_w, unsigned int tile_h)
+{
+  logfile << "CZIImage::getAllChannelsPyramidLayerTile() begin" << endl;
+
+  /// For fluorescence images, ScalingChannelComposite works well.
+  // See:  CZICmd/execute.cpp -- class CExecuteScalingChannelComposite -- execute().
+
+
+
+
+
+  logfile << "CZIImage::getAllChannelsPyramidLayerTile() end [channels_size == " << channels_size << "]" << endl;
+
+  return RawTile();
+}
+
+
+#if 0  // TODO(Leo)
+shared_ptr<IBitmapData> CZIImage::getCziBitmap(
+											   int channel, int z_layer,
+											   int pyramid_layer,
+											   IntRect roi)
+{
+}
+#endif // TODO(Leo)
+											   

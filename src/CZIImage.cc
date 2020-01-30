@@ -178,9 +178,16 @@ scene#0:
           scale *= layer_stats.layerInfo.minificationFactor;
         }
 
+#if 1  // TODO(LEO) Pick best
         // Scaled down dimensions [rounded up with (.. -1)/scale +1]
         unsigned int w = (full_width -1)/scale +1;
         unsigned int h = (full_height -1)/scale +1;
+#else  // TODO(LEO) Pick best
+        // Scaled down dimensions [rounded down]
+        unsigned int w = full_width/scale;
+        unsigned int h = full_height/scale;
+#endif // TODO(LEO) Pick best
+
         // Ignore downsamples smaller than 2K x 2K.
         // TODO(Leo) Why?  Ask Coleman.  Maybe don't care about viewing anything smaller.
 #if 1  // TODO(Leo) reset to best values
@@ -427,7 +434,10 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
   }
   else if (pixel_type == libCZI::PixelType::Gray16) {
 #undef  TRY_GRAY8_MCCOMPOSITE
-#define  TRY_GRAY8_MCCOMPOSITE
+#undef  TRY_BGR24_MCCOMPOSITE
+#undef  TRY_GRAY8_COLLATED
+#define  TRY_GRAY8_COLLATED
+
 #if 0  // TODO(Leo) Temp!!
     channels = 1;  // Let's try just the first fluorescence channel.
     bpc = 16;
@@ -437,8 +447,13 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
 #elif defined(TRY_GRAY8_MCCOMPOSITE)  // TODO(Leo) Let's try Gray8 gray-scale mcComposite
     channels = 1;  // Let's try Gray8 gray-scale mcComposite
     bpc = 8;
-#elif 1  // TODO(Leo) Let's try Bgr24 mcComposite
+#elif defined(TRY_BGR24_MCCOMPOSITE)  // TODO(Leo) Let's try Bgr24 mcComposite
     channels = 3;  // Let's try Bgr24 mcComposite
+    bpc = 8;
+#elif defined(TRY_GRAY8_COLLATED)  // TODO(Leo) Let's try Gray8 collated.
+	//    channels = 1;  // Let's try Gray8 gray-scale mcComposite
+	//    bpc = 8 * channels_size;
+    channels = channels_size;  // Let's try Gray8 gray-scale mcComposite
     bpc = 8;
 #endif
 
@@ -756,10 +771,13 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
   //    -- CSaveData::Save(), CSaveData::SaveBgr24(), CSaveData::SaveGray16(),
   //    -- CSaveData::SavePngTweakLineBeforeWritng(), CSaveData::SavePng()
   libCZI::ScopedBitmapLockerP lckScoped{bitmap.get()};
+  std::uint32_t tile_buf_stride =
+	(lckScoped.stride / bitmap->GetWidth()) * bitmap->GetWidth();
 
   logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__
 		  << "  lckScoped: stride = " << lckScoped.stride
 		  << ", size = " << lckScoped.size
+		  << "; tile_buf_stride = " << tile_buf_stride
 		  << endl;
 
   tile_malloc( lckScoped.size );
@@ -772,8 +790,8 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
     memcpy(lineToTweak.get(), roi_ptr, lckScoped.stride);
     tweakLine(bitmap->GetPixelType(), bitmap->GetWidth(), lineToTweak.get());
 
-    void *tile_buf_ptr = (((char *) tile_buf) + h * lckScoped.stride);
-    memcpy(tile_buf_ptr, lineToTweak.get(), lckScoped.stride);
+    void *tile_buf_ptr = (((char *) tile_buf) + h * tile_buf_stride);
+    memcpy(tile_buf_ptr, lineToTweak.get(), tile_buf_stride);
   }
 
   logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__
@@ -832,9 +850,10 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
   //  scptaOptions.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
 
 
-
-
 #if 1  // TODO(LEO) For now, output Composite.
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__ << endl;
+
   auto accessor = czi_reader->CreateSingleChannelPyramidLayerTileAccessor();
 
   /*static*/ std::vector<shared_ptr<libCZI::IBitmapData>> channelBitmaps;
@@ -854,6 +873,9 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
   }
 
 #if 1  // TODO(LEO) For now, output Composite.  TBD!!  Separate out each Channel and collate!!!
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__ << endl;
+
   libCZI::CDisplaySettingsHelper dsplHlp;
   dsplHlp.Initialize(dsplSettings.get(), [&](int chIndx)->libCZI::PixelType {
 	  int idx = (int) std::distance(activeChannels.cbegin(),
@@ -864,6 +886,9 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
 	});
 
 #if 1  // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__ << endl;
+
 #if defined(TRY_GRAY8_MCCOMPOSITE)  // TODO(Leo) Let's try Gray8 gray-scale mcComposite
   shared_ptr<libCZI::IBitmapData> mcComposite = libCZI::Compositors::ComposeMultiChannel_Gray8(
 	  (int) channelBitmaps.size(),
@@ -888,7 +913,7 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
   
   memcpy((char *) tile_buf, (char *) lckScoped.ptrDataRoi, lckScoped.size);
 
-#elif 1  // TODO(Leo) Let's try Bgr24 mcComposite
+#elif defined(TRY_BGR24_MCCOMPOSITE)  // TODO(Leo) Let's try Bgr24 mcComposite
   shared_ptr<libCZI::IBitmapData> mcComposite = libCZI::Compositors::ComposeMultiChannel_Bgr24(
 	  (int) channelBitmaps.size(),
 	  std::begin(channelBitmaps),
@@ -902,10 +927,13 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
 		  << endl;
 
   libCZI::ScopedBitmapLockerP lckScoped{mcComposite.get()};
+  std::uint32_t tile_buf_stride =
+	(lckScoped.stride / mcComposite->GetWidth()) * mcComposite->GetWidth();
 
   logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__
 		  << "  lckScoped: stride = " << lckScoped.stride
 		  << ", size = " << lckScoped.size
+		  << "; tile_buf_stride = " << tile_buf_stride
 		  << endl;
 
   tile_malloc( lckScoped.size );
@@ -916,9 +944,109 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
     memcpy(lineToTweak.get(), roi_ptr, lckScoped.stride);
     tweakLine(mcComposite->GetPixelType(), mcComposite->GetWidth(), lineToTweak.get());
 
-    void *tile_buf_ptr = (((char *) tile_buf) + h * lckScoped.stride);
-    memcpy(tile_buf_ptr, lineToTweak.get(), lckScoped.stride);
+    void *tile_buf_ptr = (((char *) tile_buf) + h * tile_buf_stride);
+    memcpy(tile_buf_ptr, lineToTweak.get(), tile_buf_stride);
   }
+
+
+#elif defined(TRY_GRAY8_COLLATED)  // TODO(Leo) Let's try Gray8 collated.
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__ << endl;
+
+
+  // TODO(Leo) Use display settings to composite each Gray16 bitmap to Gray8 bitmap.
+  // TODO(Leo) For now, just copy Gray16 bitmaps to Gray8 bitmaps.
+  /*static*/ std::vector<shared_ptr<libCZI::IBitmapData>> gray8Bitmaps;
+
+  for (int ch = 0; ch < (int) activeChannels.size(); ++ch) {
+	gray8Bitmaps.emplace_back(
+	  GetSite()->CreateBitmap(libCZI::PixelType::Gray8,
+							  channelBitmaps[ch]->GetWidth(),
+							  channelBitmaps[ch]->GetHeight()));
+  }
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__ << endl;
+
+
+  tmsize_t gray8_size = 0;
+  tmsize_t collated_size = 0;
+  std::uint32_t tile_buf_stride = 0;
+  std::uint32_t tile_buf_height = 0;
+  for (int ch = 0; ch < (int) activeChannels.size(); ++ch) {
+	int chx = activeChannels.size() - 1 - ch;
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__ << endl;
+
+	libCZI::ScopedBitmapLockerP locked_gray16{channelBitmaps[ch].get()};
+	libCZI::ScopedBitmapLockerP locked_gray8{gray8Bitmaps[chx].get()};
+	gray8_size = locked_gray8.size;
+	collated_size += locked_gray8.size;
+    tile_buf_stride = (locked_gray8.stride / gray8Bitmaps[chx]->GetWidth())
+	  * gray8Bitmaps[chx]->GetWidth();
+    tile_buf_height = gray8Bitmaps[chx]->GetHeight();
+
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__
+		  << ", gray8_size =" << gray8_size
+		  << ", collated_size = " << collated_size
+		  << ", locked_gray16.stride = " << locked_gray16.stride
+		  << ", locked_gray8.stride = " << locked_gray8.stride
+		  << ", tile_buf_stride = " << tile_buf_stride
+		  << ", tile_buf_height = " << tile_buf_height
+		  << ", GetWidth() = " << channelBitmaps[ch]->GetWidth() << " <=> " << gray8Bitmaps[ch]->GetWidth()
+		  << ", GetHeight() = " << channelBitmaps[ch]->GetHeight() << " <=> " << gray8Bitmaps[ch]->GetHeight()
+		  << endl;
+
+#if 1
+	CBitmapOperations::Copy(
+	  libCZI::PixelType::Gray16, locked_gray16.ptrDataRoi, locked_gray16.stride,
+	  libCZI::PixelType::Gray8, locked_gray8.ptrDataRoi, locked_gray8.stride,
+	  channelBitmaps[ch]->GetWidth(), channelBitmaps[ch]->GetHeight(), false);
+#elif 1
+	for (int px = 0; px < gray8_size; ++px) {
+	  ((unsigned char *) locked_gray8.ptrDataRoi)[px] =
+		((unsigned short *) locked_gray16.ptrDataRoi)[px] >> 8;
+	}
+#elif 0
+    for (std::uint32_t h = 0; h < tile_buf_height; ++h) {
+	  for (std::uint32_t w = 0; w < tile_buf_stride; ++w) {
+		std::uint32_t gray16_px = h * locked_gray16.stride + w;
+		std::uint32_t gray8_px = h * locked_gray8.stride + w;
+
+		((unsigned char *) locked_gray8.ptrDataRoi)[gray8_px] =
+		  ((unsigned short *) locked_gray16.ptrDataRoi)[gray16_px] >> 8;
+	  }
+	}
+#endif
+  }
+
+  logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__ << endl;
+
+
+  tile_malloc( collated_size );
+  for (int ch = 0; ch < (int) activeChannels.size(); ++ch) {
+	libCZI::ScopedBitmapLockerP locked_gray8{gray8Bitmaps[ch].get()};
+
+#if 0
+	for (int px = 0; px < gray8_size; ++px) {
+	  ((char *) tile_buf)[px * channels + ch] =
+		((char *) locked_gray8.ptrDataRoi)[px];
+	}
+#elif 1
+    for (std::uint32_t h = 0; h < tile_buf_height; ++h) {
+	  for (std::uint32_t w = 0; w < tile_buf_stride; ++w) {
+		std::uint32_t tile_px = h * tile_buf_stride + w;
+		std::uint32_t gray8_px = h * locked_gray8.stride + w;
+
+		((char *) tile_buf)[tile_px * channels + ch] =
+		  ((char *) locked_gray8.ptrDataRoi)[gray8_px];
+	  }
+	}
+#endif
+  }
+
+  // TODO(LEO) TEMP!! TEMP!! TEMP!! TEMP!! TEMP!!
+//  libCZI::ScopedBitmapLockerP lckScoped{gray8Bitmaps[0].get()};
 
 #endif  // TODO(Leo) // Let's try Gray8?? Bgr24?? mcComposite
 #endif // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -934,7 +1062,7 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
 
   RawTile rawtile( tile, res, seq, ang, tile_w, tile_h, channels, bpc );
   rawtile.data = tile_buf;
-  rawtile.dataLength = lckScoped.size;
+  rawtile.dataLength = tile_size;  //lckScoped.size;
   rawtile.filename = getImagePath();
   rawtile.timestamp = timestamp;
   rawtile.memoryManaged = 0;

@@ -5,6 +5,10 @@ noinst_PROGRAMS =	iipsrv.fcgi
 
 INCLUDES =		@INCLUDES@ @LIBFCGI_INCLUDES@ @JPEG_INCLUDES@ @TIFF_INCLUDES@
 
+# Forced include of libCZI headers.
+# Currently assumes libCZI headers are downloaded parallel to this directory.
+INCLUDES += -I../../libCZI/Src/libCZI
+
 LIBS =			@LIBS@ @LIBFCGI_LIBS@ @DL_LIBS@ @JPEG_LIBS@ @TIFF_LIBS@ -lm
 AM_LDFLAGS =	@LIBFCGI_LDFLAGS@
 
@@ -30,11 +34,9 @@ if ENABLE_MODULES
 iipsrv_fcgi_LDADD += DSOImage.o
 endif
 
-## TODO(Leo) Clean-up usage of non-standard /home/leo include paths.
-## Forced include of libCZI libraries.
-INCLUDES += -I/home/leo/GitHub/Leo311/libCZI/Src/libCZI
-## Forced link of libCZI libraries.
-iipsrv_fcgi_LDADD += /home/leo/GitHub/Leo311/libCZI/Src/libCZI/liblibCZIStatic.a /home/leo/GitHub/Leo311/libCZI/Src/JxrDecode/libJxrDecodeStatic.a
+# Forced link of libCZI static libraries.
+# Currently assumes libCZI static libraries are pre-built parallel to this directory.
+iipsrv_fcgi_LDADD += ../../libCZI/Src/libCZI/liblibCZIStatic.a ../../libCZI/Src/JxrDecode/libJxrDecodeStatic.a
 
 EXTRA_iipsrv_fcgi_SOURCES = DSOImage.h DSOImage.cc KakaduImage.h KakaduImage.cc Main.cc OpenJPEGImage.h OpenJPEGImage.cc PNGCompressor.h PNGCompressor.cc OpenSlideImage.h OpenSlideImage.cc
 

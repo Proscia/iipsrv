@@ -1203,14 +1203,35 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
 										 return single_channel_bitmaps[0]->GetPixelType();
 									   });
 
-	// shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
-    //     (int) channelBitmaps.size(),
-    //     std::begin(channelBitmaps),
-    //     display_settings_helper.GetChannelInfosArray());
+    logfile << __FILE__ << ":  " << __FUNCTION__ << "()  " << __LINE__
+			<< ",channel " << chx
+			<< ": weight " << display_settings_helper.GetChannelInfosArray()[0].weight
+			<< ", enableTinting " << display_settings_helper.GetChannelInfosArray()[0].enableTinting
+			<< ", tinting bgr " << (int)display_settings_helper.GetChannelInfosArray()[0].tinting.color.b
+			<< "." << (int)display_settings_helper.GetChannelInfosArray()[0].tinting.color.g
+			<< "." << (int)display_settings_helper.GetChannelInfosArray()[0].tinting.color.r
+			<< ", blackPoint " << display_settings_helper.GetChannelInfosArray()[0].blackPoint
+			<< ", whitePoint " << display_settings_helper.GetChannelInfosArray()[0].whitePoint
+			<< endl;
+
+#if 0 // Hmm, maybe manually alter channel info.
 	shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
         (int) single_channel_bitmaps.size(),
         std::begin(single_channel_bitmaps),
         display_settings_helper.GetChannelInfosArray());
+#elif 1 // Hmm, maybe manually alter channel info.
+  libCZI::Compositors::ChannelInfo single_channel_info = display_settings_helper.GetChannelInfosArray()[0];
+  if (single_channel_info.enableTinting)
+    single_channel_info.tinting.color.r =
+        single_channel_info.tinting.color.g =
+        single_channel_info.tinting.color.b = 255;
+
+	shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
+        (int) single_channel_bitmaps.size(),
+        std::begin(single_channel_bitmaps),
+        &single_channel_info);
+#endif // Hmm, maybe manually alter channel info.
+	
 #endif
 
     libCZI::ScopedBitmapLockerP locked_gray8{gray8_bitmap.get()};

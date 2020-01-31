@@ -22,9 +22,6 @@
 
 
 #include "IIPImage.h"
-#if 0  // TODO(Leo)  Remove, replace w. <tiffio.h>
-//#include "QPTIFFImage.h"
-#endif
 #include <tiffio.h>  // TIFFOpen(), TIFFClose(), TIFFGetField(), TIFFTAG_SOFTWARE
 
 #ifdef HAVE_OPENSLIDE
@@ -133,7 +130,7 @@ void IIPImage::testImageType()
     }
     else if (suffix == "czi") {
       format = CZI;
-	  }
+    }
     else
 #endif
     {

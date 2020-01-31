@@ -172,31 +172,32 @@ scene#0:
  number of subblocks with scale 1/81: 3
  number of subblocks with scale 1/243: 1
   */
-  auto pyrStatistics = czi_reader->GetPyramidStatistics();
-  auto scene0PyrStatistics = pyrStatistics.scenePyramidStatistics[0];
-  for (const auto& layer_stats : scene0PyrStatistics) {
-    if (!layer_stats.layerInfo.IsNotIdentifiedAsPyramidLayer()) {
-      if (layer_stats.layerInfo.IsLayer0() != true) {
-        int scale = layer_stats.layerInfo.minificationFactor;
-        for (int n = 1; n < layer_stats.layerInfo.pyramidLayerNo; ++n) {
-          scale *= layer_stats.layerInfo.minificationFactor;
+  auto pyramid_statistics = czi_reader->GetPyramidStatistics();
+  auto scene0_pyramid_statistics = pyramid_statistics.scenePyramidStatistics[0];
+  for (const auto& layer_statistics : scene0_pyramid_statistics) {
+    if (!layer_statistics.layerInfo.IsNotIdentifiedAsPyramidLayer()) {
+      if (layer_statistics.layerInfo.IsLayer0() != true) {
+        int scale = layer_statistics.layerInfo.minificationFactor;
+        for (int n = 1; n < layer_statistics.layerInfo.pyramidLayerNo; ++n) {
+          scale *= layer_statistics.layerInfo.minificationFactor;
         }
 
         // Scaled down dimensions [rounded up with (.. -1)/scale +1]
         unsigned int w = (full_width -1)/scale +1;
         unsigned int h = (full_height -1)/scale +1;
 
+#if 0  // It's a QPTIFF thing, smaller than 2K x 2K are strips, not tiles.
         // Ignore downsamples smaller than 2K x 2K.
         // TODO(Leo) Why?  Ask Coleman.  Maybe don't care about viewing anything smaller.
         if (w < 2000 && h < 2000) {
           break;
         }
-
+#endif // It's a QPTIFF thing, smaller than 2K x 2K are strips, not tiles.
 
 		// High resolution to low resolution.
         image_widths.push_back( w );
         image_heights.push_back( h );
-        image_minification = layer_stats.layerInfo.minificationFactor;
+        image_minification = layer_statistics.layerInfo.minificationFactor;
         image_scales.push_back( scale );
         ++numResolutions;
 

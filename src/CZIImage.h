@@ -107,7 +107,8 @@ class CZIImage : public IIPImage {
   /** @param image CZIImage object
    */
   CZIImage& operator = ( CZIImage image ) {
-    if( this != &image ){
+    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(CZIImage image)" << endl;
+    if ( this != &image ) {
       // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(CZIImage image)" << endl;
       closeImage();
       IIPImage::operator=(image);

@@ -120,12 +120,15 @@ void CZIImage::loadImageInfo( int seq, int ang ) {
   subblock_statistics.dimBounds.TryGetInterval(libCZI::DimensionIndex::C,
 											   &channels_start, &channels_size);
   channels = (unsigned int) channels_size;
+
   subblock_statistics.dimBounds.TryGetInterval(libCZI::DimensionIndex::Z,
 											   &z_layers_start, &z_layers_size);
+
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
 		  << ", channels = " << channels
 		  << ", z_layers_size = " << z_layers_size
 		  << endl;
+
 
   // Store the list of image dimensions available
 
@@ -211,7 +214,6 @@ scene#0:
     }
   }
 
-
   /// The base tile pixel dimensions
   ///   IIPImage:  unsigned int tile_width, tile_height;
   //
@@ -248,6 +250,8 @@ Complete list of sub-blocks
 
   /// The colour space of the image
   ///   ColourSpaces colourspace;
+  //
+  // See:  libCZI/Src/libCZI/libCZI_Pixels.h -- enum class PixelType.
   switch (pixel_type) {
     case libCZI::PixelType::Gray8:
     case libCZI::PixelType::Gray16:
@@ -398,18 +402,6 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
   //////logfile << ", bpc = " << bpc;
   //////logfile << endl;
 
-#if 0  // TODO(Leo) Leave just the best way
-  if (bpc > 8) {
-    unsigned int channels_factor = (bpc / 8);
-    channels *= channels_factor;
-    bpc /= channels_factor;
-
-    //////logfile << "CZIImage::loadImageInfo() Y";
-    //////logfile << ", channels = " << channels;
-    //////logfile << ", bpc = " << bpc;
-    //////logfile << endl;
-  }
-#elif 1 // TODO(Leo) Leave just the best way
   if (pixel_type == libCZI::PixelType::Bgr24) {
     channels *= (bpc / 8);
     bpc = 8;
@@ -438,9 +430,8 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
     channels = 3;  // Let's try Bgr24 mcComposite
     bpc = 8;
 #elif defined(TRY_GRAY8_COLLATED)  // TODO(Leo) Let's try Gray8 collated.
-    //    channels = 1;  // Let's try Gray8 gray-scale mcComposite
-    //    bpc = 8 * channels_size;
-    channels = channels_size;  // Let's try Gray8 gray-scale mcComposite
+	// Collated composite 8-bit gray-scale (Gray8).
+    channels = channels_size;
     bpc = 8;
 #endif
 
@@ -458,7 +449,6 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
     //////logfile << ", bpc = " << bpc;
     //////logfile << endl;
   }
-#endif // TODO(Leo) Leave just the best way
 
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << ", END" << endl;
 }
@@ -787,31 +777,6 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
 }
 
 
-
-// Test channel display settings wrapper around general display settings.
-class TestDisplaySettingsWrapper : public libCZI::IDisplaySettings
-{
-private:
-  const std::shared_ptr<libCZI::IDisplaySettings> wrapped_display_settings;
-  const int original_channel_index;
-public:
-  explicit TestDisplaySettingsWrapper(
-      const std::shared_ptr<libCZI::IDisplaySettings>& display_settings,
-      int channel_index
-										  )
-	: wrapped_display_settings(display_settings),
-	  original_channel_index(channel_index)
-  {}
-
-  void EnumChannels(std::function<bool(int)> func) const override {
-	wrapped_display_settings->EnumChannels(func);
-  }
-
-  std::shared_ptr<libCZI::IChannelDisplaySetting> GetChannelDisplaySettings(int chIndex) const override {
-	return wrapped_display_settings->GetChannelDisplaySettings(chIndex);
-  }
-
-};
 // Single channel display settings wrapper around general display settings.
 class SingleDisplaySettingsWrapper : public libCZI::IDisplaySettings
 {
@@ -826,13 +791,10 @@ public:
   {}
 
   void EnumChannels(std::function<bool(int chIndex)> func) const override {
-    //	wrapped_display_settings->EnumChannels(func);
-	//	func(original_channel_index);
     func(0);
   }
 
   std::shared_ptr<libCZI::IChannelDisplaySetting> GetChannelDisplaySettings(int chIndex) const override {
-	//	if (chIndex == original_channel_index)
     if (chIndex == 0)
       return wrapped_display_settings->GetChannelDisplaySettings(original_channel_index);
 
@@ -840,8 +802,6 @@ public:
   }
 
 };
-
-
 
 // Multiple CZI channels (usu. fluorescence, Gray16).
 RawTile CZIImage::getAllChannelsPyramidLayerTile(
@@ -863,20 +823,17 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
 
   libCZI::ISingleChannelPyramidLayerTileAccessor::Options scptaOptions;
   scptaOptions.Clear();
+  //  scptaOptions.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
   libCZI::RgbFloatColor bright_bkgd{ 0.9, 0.9, 0.9 };  // Light for brightfield images.
   libCZI::RgbFloatColor fluor_bkgd{ 0.0, 0.0, 0.0 };  // Black for fluorescence channels.
   scptaOptions.backGroundColor = (channels_size == 1 ? bright_bkgd : fluor_bkgd);
-  //  scptaOptions.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
 
 
-  std::shared_ptr<libCZI::IDisplaySettings> __dsplSettings = (czi_reader
+  std::shared_ptr<libCZI::IDisplaySettings> dsplSettings = (czi_reader
                                                             ->ReadMetadataSegment()
                                                             ->CreateMetaFromMetadataSegment()
                                                             ->GetDocumentInfo()
                                                             ->GetDisplaySettings());
-  // std::shared_ptr<libCZI::IDisplaySettings> dsplSettings =
-  // 	std::shared_ptr<libCZI::IDisplaySettings>(new TestDisplaySettingsWrapper(__dsplSettings, 0));
-  std::shared_ptr<libCZI::IDisplaySettings> dsplSettings(new TestDisplaySettingsWrapper(__dsplSettings, 0));
   std::vector<int> activeChannels = libCZI::CDisplaySettingsHelper::GetActiveChannels(dsplSettings.get());
 
 #if 1  // TODO(LEO) For now, output Composite.
@@ -919,174 +876,10 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
   //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
 
 #if defined(TRY_GRAY8_MCCOMPOSITE)  // TODO(Leo) Let's try Gray8 gray-scale mcComposite
-  shared_ptr<libCZI::IBitmapData> mcComposite = libCZI::Compositors::ComposeMultiChannel_Gray8(
-      (int) channelBitmaps.size(),
-      std::begin(channelBitmaps),
-      dsplHlp.GetChannelInfosArray());
-
-  // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  //         << "  mcComposite: width = " << mcComposite->GetWidth()
-  //         << ", height = " << mcComposite->GetHeight()
-  //         << ", pixel type = " << (int) mcComposite->GetPixelType()
-  //         << ", size = " << mcComposite->GetSize()
-  //         << endl;
-
-  libCZI::ScopedBitmapLockerP lckScoped{mcComposite.get()};
-
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << "  lckScoped: stride = " << lckScoped.stride
-  // //         << ", size = " << lckScoped.size
-  // //         << endl;
-
-  tile_buf_malloc( lckScoped.size );
-  
-  memcpy((char *) tile_buf, (char *) lckScoped.ptrDataRoi, lckScoped.size);
-
 #elif defined(TRY_BGR24_MCCOMPOSITE)  // TODO(Leo) Let's try Bgr24 mcComposite
-#if 1  // Compose bitmap iterator
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << ", Compose bitmap iterator" << endl;
-  shared_ptr<libCZI::IBitmapData> mcComposite = libCZI::Compositors::ComposeMultiChannel_Bgr24(
-      (int) channelBitmaps.size(),
-      std::begin(channelBitmaps),
-      dsplHlp.GetChannelInfosArray());
-#elif 0  // Compose bitmap array // Doesn't work; need's vector of IBitmapData*, not of shared_ptr
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << ", Compose bitmap array" << endl;
-  shared_ptr<libCZI::IBitmapData> mcComposite = libCZI::Compositors::ComposeMultiChannel_Bgr24(
-      (int) channelBitmaps.size(),
-      &channelBitmaps[0],
-      dsplHlp.GetChannelInfosArray());
-#endif
-
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << "  mcComposite: width = " << mcComposite->GetWidth()
-  // //         << ", height = " << mcComposite->GetHeight()
-  // //         << ", pixel type = " << (int) mcComposite->GetPixelType()
-  // //         << ", size = " << mcComposite->GetSize()
-  // //         << endl;
-
-  libCZI::ScopedBitmapLockerP lckScoped{mcComposite.get()};
-  std::uint32_t tile_buf_stride =
-    (lckScoped.stride / mcComposite->GetWidth()) * mcComposite->GetWidth();
-
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << "  lckScoped: stride = " << lckScoped.stride
-  // //         << ", size = " << lckScoped.size
-  // //         << "; tile_buf_stride = " << tile_buf_stride
-  // //         << endl;
-
-  tile_buf_malloc( lckScoped.size );
-  
-  std::unique_ptr<void, decltype(&free)> lineToTweak(malloc(lckScoped.stride), &free);
-  for (std::uint32_t h = 0; h < mcComposite->GetHeight(); ++h) {
-    void *roi_ptr = (((char *) lckScoped.ptrDataRoi) + h * lckScoped.stride);
-    memcpy(lineToTweak.get(), roi_ptr, lckScoped.stride);
-    tweakLine(mcComposite->GetPixelType(), mcComposite->GetWidth(), lineToTweak.get());
-
-    void *tile_buf_ptr = (((char *) tile_buf) + h * tile_buf_stride);
-    memcpy(tile_buf_ptr, lineToTweak.get(), tile_buf_stride);
-  }
-
-
 #elif defined(TRY_GRAY8_COLLATED)  // TODO(Leo) Let's try Gray8 collated.
 
 #if 0  // TODO(Leo) Refactor TRY_GRAY8_COLLATED =============================================================
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
-
-
-  // TODO(Leo) Use display settings to composite each Gray16 bitmap to Gray8 bitmap.
-  // TODO(Leo) For now, just copy Gray16 bitmaps to Gray8 bitmaps.
-  /*static*/ std::vector<shared_ptr<libCZI::IBitmapData>> gray8Bitmaps;
-
-  for (int ch = 0; ch < (int) activeChannels.size(); ++ch) {
-    gray8Bitmaps.emplace_back(
-      GetSite()->CreateBitmap(libCZI::PixelType::Gray8,
-                              channelBitmaps[ch]->GetWidth(),
-                              channelBitmaps[ch]->GetHeight()));
-  }
-
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
-
-
-  tmsize_t gray8_size = 0;
-  tmsize_t collated_size = 0;
-  std::uint32_t tile_buf_stride = 0;
-  std::uint32_t tile_buf_height = 0;
-  for (int ch = 0; ch < (int) activeChannels.size(); ++ch) {
-	//    int chx = activeChannels.size() - 1 - ch;
-    int chx = ch;
-
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
-
-    libCZI::ScopedBitmapLockerP locked_gray16{channelBitmaps[ch].get()};
-    libCZI::ScopedBitmapLockerP locked_gray8{gray8Bitmaps[chx].get()};
-    gray8_size = locked_gray8.size;
-    collated_size += locked_gray8.size;
-    tile_buf_stride = (locked_gray8.stride / gray8Bitmaps[chx]->GetWidth())
-      * gray8Bitmaps[chx]->GetWidth();
-    tile_buf_height = gray8Bitmaps[chx]->GetHeight();
-
-
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << ", gray8_size =" << gray8_size
-  // //         << ", collated_size = " << collated_size
-  // //         << ", locked_gray16.stride = " << locked_gray16.stride
-  // //         << ", locked_gray8.stride = " << locked_gray8.stride
-  // //         << ", tile_buf_stride = " << tile_buf_stride
-  // //         << ", tile_buf_height = " << tile_buf_height
-  // //         << ", GetWidth() = " << channelBitmaps[ch]->GetWidth() << " <=> " << gray8Bitmaps[ch]->GetWidth()
-  // //         << ", GetHeight() = " << channelBitmaps[ch]->GetHeight() << " <=> " << gray8Bitmaps[ch]->GetHeight()
-  // //         << endl;
-
-#if 1
-    CBitmapOperations::Copy(
-      libCZI::PixelType::Gray16, locked_gray16.ptrDataRoi, locked_gray16.stride,
-      libCZI::PixelType::Gray8, locked_gray8.ptrDataRoi, locked_gray8.stride,
-      channelBitmaps[ch]->GetWidth(), channelBitmaps[ch]->GetHeight(), false);
-#elif 1
-    for (int px = 0; px < gray8_size; ++px) {
-      ((unsigned char *) locked_gray8.ptrDataRoi)[px] =
-        ((unsigned short *) locked_gray16.ptrDataRoi)[px] >> 8;
-    }
-#elif 0
-    for (std::uint32_t h = 0; h < tile_buf_height; ++h) {
-      for (std::uint32_t w = 0; w < tile_buf_stride; ++w) {
-        std::uint32_t gray16_px = h * locked_gray16.stride + w;
-        std::uint32_t gray8_px = h * locked_gray8.stride + w;
-
-        ((unsigned char *) locked_gray8.ptrDataRoi)[gray8_px] =
-          ((unsigned short *) locked_gray16.ptrDataRoi)[gray16_px] >> 8;
-      }
-    }
-#endif
-  }
-
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
-
-
-  tile_buf_malloc( collated_size );
-  for (int ch = 0; ch < (int) activeChannels.size(); ++ch) {
-    libCZI::ScopedBitmapLockerP locked_gray8{gray8Bitmaps[ch].get()};
-
-#if 0
-    for (int px = 0; px < gray8_size; ++px) {
-      ((char *) tile_buf)[px * channels + ch] =
-        ((char *) locked_gray8.ptrDataRoi)[px];
-    }
-#elif 1
-    for (std::uint32_t h = 0; h < tile_buf_height; ++h) {
-      for (std::uint32_t w = 0; w < tile_buf_stride; ++w) {
-        std::uint32_t tile_px = h * tile_buf_stride + w;
-        std::uint32_t gray8_px = h * locked_gray8.stride + w;
-
-        ((char *) tile_buf)[tile_px * channels + ch] =
-          ((char *) locked_gray8.ptrDataRoi)[gray8_px];
-      }
-    }
-#endif
-  }
-
 #elif 1  // TODO(Leo) Refactor TRY_GRAY8_COLLATED ============================================================
   //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
 
@@ -1115,61 +908,14 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
 
 
 
-#if 0  // Copy single Gray16 channel to Gray8 channel.
-    //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
-    shared_ptr<libCZI::IBitmapData> gray8_bitmap =
-      GetSite()->CreateBitmap(libCZI::PixelType::Gray8,
-                              channelBitmaps[ch]->GetWidth(),
-                              channelBitmaps[ch]->GetHeight());
-
-    libCZI::ScopedBitmapLockerP locked_gray16{channelBitmaps[chx].get()};
-    libCZI::ScopedBitmapLockerP locked_gray8{gray8_bitmap.get()};
-
-    CBitmapOperations::Copy(
-      libCZI::PixelType::Gray16, locked_gray16.ptrDataRoi, locked_gray16.stride,
-      libCZI::PixelType::Gray8, locked_gray8.ptrDataRoi, locked_gray8.stride,
-      channelBitmaps[ch]->GetWidth(), channelBitmaps[ch]->GetHeight(), false);
-
-    // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-    // //         << ", locked_gray16.size = " << locked_gray16.size
-    // //         << ", locked_gray8.size = " << locked_gray8.size
-    // //         << ", locked_gray16.stride = " << locked_gray16.stride
-    // //         << ", locked_gray8.stride = " << locked_gray8.stride
-    // //         << ", GetWidth() = " << channelBitmaps[ch]->GetWidth() << " <=> " << gray8_bitmap->GetWidth()
-    // //         << ", GetHeight() = " << channelBitmaps[ch]->GetHeight() << " <=> " << gray8_bitmap->GetHeight()
-    // //         << endl;
-
-#elif 1  // Composite single Gray16 channel to Gray8 channel.
-#if 0 // TODO(Leo) Wrong index, BUT produces a gray-scale (same over each channel).
-	std::vector<int> active_channels{ ch };
-    // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-	// // 		<< ", active_channels.size() = " << active_channels.size()
-	// // 		<< ", active_channels.at(0) = " << active_channels.at(0)
-	// // 		<< endl;
-	libCZI::CDisplaySettingsHelper display_settings_helper;
-	display_settings_helper.Initialize(dsplSettings.get(), [&](int chIndx)->libCZI::PixelType {
-		int idx = (int) std::distance(active_channels.cbegin(),
-									  std::find(active_channels.cbegin(),
-												active_channels.cend(),
-												chIndx));
-		return channelBitmaps[idx]->GetPixelType();
-	  });
-
-	shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
-        (int) channelBitmaps.size(),
-        std::begin(channelBitmaps),
-        display_settings_helper.GetChannelInfosArray());
-#else
-	//	SingleDisplaySettingsWrapper single_display_settings(dsplSettings, ch);
 	std::shared_ptr<libCZI::IDisplaySettings> single_display_settings(
-        new SingleDisplaySettingsWrapper(__dsplSettings, chx));
+        new SingleDisplaySettingsWrapper(dsplSettings, chx));
 
 	std::vector<shared_ptr<libCZI::IBitmapData>> single_channel_bitmaps{ channelBitmaps[chx] };
 
 	libCZI::CDisplaySettingsHelper display_settings_helper;
 	display_settings_helper.Initialize(single_display_settings.get(),
 									   [&](int chIndx)->libCZI::PixelType {
-										 //										 return channelBitmaps[chx]->GetPixelType();
 										 return single_channel_bitmaps[0]->GetPixelType();
 									   });
 
@@ -1184,25 +930,19 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
 	// // 		<< ", whitePoint " << display_settings_helper.GetChannelInfosArray()[0].whitePoint
 	// // 		<< endl;
 
-#if 0 // Hmm, maybe manually alter channel info.
-	shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
-        (int) single_channel_bitmaps.size(),
-        std::begin(single_channel_bitmaps),
-        display_settings_helper.GetChannelInfosArray());
-#elif 1 // Hmm, maybe manually alter channel info.
-  libCZI::Compositors::ChannelInfo single_channel_info = display_settings_helper.GetChannelInfosArray()[0];
-  if (single_channel_info.enableTinting)
-    single_channel_info.tinting.color.r =
-        single_channel_info.tinting.color.g =
-        single_channel_info.tinting.color.b = 255;
+	// Manually alter channel info to full gray-scale (#FFFFFF) tinting.
+    libCZI::Compositors::ChannelInfo single_channel_info = display_settings_helper.GetChannelInfosArray()[0];
+    if (single_channel_info.enableTinting)
+      single_channel_info.tinting.color.r =
+          single_channel_info.tinting.color.g =
+          single_channel_info.tinting.color.b = 255;
 
-	shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
+	// Composite single channel to 8-bit gray-scale, using the channel's display settings.
+    shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
         (int) single_channel_bitmaps.size(),
         std::begin(single_channel_bitmaps),
         &single_channel_info);
-#endif // Hmm, maybe manually alter channel info.
 	
-#endif
 
     libCZI::ScopedBitmapLockerP locked_gray8{gray8_bitmap.get()};
 
@@ -1213,15 +953,15 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
     // //         << ", GetHeight() = " << channelBitmaps[ch]->GetHeight() << " <=> " << gray8_bitmap->GetHeight()
     // //         << endl;
 
-#endif // Copy single Gray16 channel to Gray8 channel.
 
+	// Collate composited Gray8 channel into channels deep tile buffer.
     for (std::uint32_t h = 0; h < tile_buf_height; ++h) {
       for (std::uint32_t w = 0; w < tile_buf_width; ++w) {
         std::uint32_t tile_px = h * tile_buf_width + w;
         std::uint32_t gray8_px = h * locked_gray8.stride + w;
 
         ((char *) tile_buf)[tile_px * channels + ch] =
-          ((char *) locked_gray8.ptrDataRoi)[gray8_px];
+            ((char *) locked_gray8.ptrDataRoi)[gray8_px];
       }
     }
   }
@@ -1270,15 +1010,3 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
   return RawTile();
 #endif // TODO(LEO) For now, output Composite.
 }
-
-
-#if 0  // TODO(Leo)
-shared_ptr<IBitmapData> CZIImage::getCziBitmap(
-                                               int channel, int z_layer,
-                                               int pyramid_layer,
-                                               IntRect roi)
-{
-}
-#endif // TODO(Leo)
-
-

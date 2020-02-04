@@ -22,7 +22,7 @@
 
 
 #include "IIPImage.h"
-#include "QPTIFFImage.h"
+#include <tiffio.h>  // TIFFOpen(), TIFFClose(), TIFFGetField(), TIFFTAG_SOFTWARE
 
 #ifdef HAVE_OPENSLIDE
 #include "OpenSlideImage.h"
@@ -127,6 +127,9 @@ void IIPImage::testImageType()
     transform( suffix.begin(), suffix.end(), suffix.begin(), ::tolower );
     if (find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
       format = OPENSLIDE;
+    }
+    else if (suffix == "czi") {
+      format = CZI;
     }
     else
 #endif

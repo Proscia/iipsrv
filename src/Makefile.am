@@ -5,6 +5,10 @@ noinst_PROGRAMS =	iipsrv.fcgi
 
 INCLUDES =		@INCLUDES@ @LIBFCGI_INCLUDES@ @JPEG_INCLUDES@ @TIFF_INCLUDES@
 
+# Forced include of libCZI headers.
+# Currently assumes libCZI headers are downloaded parallel to this directory.
+INCLUDES += -I../../libCZI/Src/libCZI
+
 LIBS =			@LIBS@ @LIBFCGI_LIBS@ @DL_LIBS@ @JPEG_LIBS@ @TIFF_LIBS@ -lm
 AM_LDFLAGS =	@LIBFCGI_LDFLAGS@
 
@@ -29,6 +33,10 @@ endif
 if ENABLE_MODULES
 iipsrv_fcgi_LDADD += DSOImage.o
 endif
+
+# Forced link of libCZI static libraries.
+# Currently assumes libCZI static libraries are pre-built parallel to this directory.
+iipsrv_fcgi_LDADD += ../../libCZI/Src/libCZI/liblibCZIStatic.a ../../libCZI/Src/JxrDecode/libJxrDecodeStatic.a
 
 EXTRA_iipsrv_fcgi_SOURCES = DSOImage.h DSOImage.cc KakaduImage.h KakaduImage.cc Main.cc OpenJPEGImage.h OpenJPEGImage.cc PNGCompressor.h PNGCompressor.cc OpenSlideImage.h OpenSlideImage.cc
 
@@ -75,4 +83,6 @@ iipsrv_fcgi_SOURCES = \
 			Logger.h \
 			Memcached.h \
 			QPTIFFImage.h \
-			QPTIFFImage.cc
+			QPTIFFImage.cc \
+			CZIImage.h \
+			CZIImage.cc

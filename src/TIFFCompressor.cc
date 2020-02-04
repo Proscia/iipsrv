@@ -139,6 +139,10 @@ void TIFFCompressor::InitCompression( const RawTile &rawtile, unsigned int strip
   TIFFSetField(dest->tiff, TIFFTAG_IMAGEWIDTH, width);
   TIFFSetField(dest->tiff, TIFFTAG_IMAGELENGTH, height);
   TIFFSetField(dest->tiff, TIFFTAG_SAMPLESPERPIXEL, channels);
+  // TODO(Leo) For interleaved channels, to fix "TIFFReadDirectory: Warning, Sum of Photometric type-related color channels and ExtraSamples doesn't match SamplesPerPixel. Defining non-color channels as ExtraSamples.."
+  // Ref: https://www.awaresystems.be/imaging/tiff/tifftags/extrasamples.html
+  //      https://www.awaresystems.be/imaging/tiff/tifftags/samplesperpixel.html
+  // TIFFSetField(dest->tiff, TIFFTAG_EXTRASAMPLES, EXTRASAMPLE_UNSPECIFIED, EXTRASAMPLE_UNSPECIFIED, EXTRASAMPLE_UNSPECIFIED, ...)
   TIFFSetField(dest->tiff, TIFFTAG_BITSPERSAMPLE, bpc);
   TIFFSetField(dest->tiff, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(dest->tiff, strip_height));
   TIFFSetField(dest->tiff, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);

@@ -49,6 +49,9 @@
 
 
 #include <string>
+#ifdef HAVE_PNG
+#include <zlib.h>
+#endif // HAVE_PNG
 
 
 /// Class to obtain environment variables

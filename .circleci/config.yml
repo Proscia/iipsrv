@@ -26,13 +26,12 @@ jobs:
           command: |
             cd ..
             git clone https://${GITHUB_OAUTH}:x-oauth-basic@github.com/${CIRCLE_PROJECT_USERNAME}/libCZI.git
-            shopt -s globstar
-            ls -l **/*.{c,h}*
 
             cmake -G "Unix Makefiles"
             make
 
             # Test for successful builds.
+            shopt -s globstar
             ls -l **/*.{a,so} **/CZIcmd
             [ -f Src/libCZI/liblibCZI.so ] \
                 && [ -f Src/libCZI/liblibCZIStatic.a ] \

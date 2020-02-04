@@ -39,6 +39,18 @@ jobs:
                 && [ -f Src/JxrDecode/libJxrDecodeStatic.a ] \
                 && [ -x Src/CZICmd/CZIcmd ]
 
+      - run:
+          name: Build IIPSRV
+          command: |
+            # See:  iipsrv/docker/Dockerfile
+
+            ./autogen.sh
+
+      - run:
+          name: Publish iipsrv.fcgi
+          command: |
+            cd ..
+
 
 
 workflows:

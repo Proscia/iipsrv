@@ -1,0 +1,37 @@
+version: 2.1
+jobs:
+  vanilla-build:
+    machine:
+      image: ubuntu-1604:201903-01
+
+    steps:
+      - checkout
+
+      - run:
+          name: Where am I?
+          command: |
+            whoami
+            pwd
+            df -h
+            ls -al
+            ls -al ~/.ssh
+            ssh-add -l
+            git config --global --list
+            git remote -v
+            # git branch -a  # Can cause build error ":Too long with no output (exceeded 10m0s)"
+            git status -uno
+
+
+
+workflows:
+  version: 2
+  vanilla_workflow:
+    jobs:
+      - vanilla-build:
+          context: dev-deployment-user
+          filters:
+            branches:
+              only:
+                - master
+                - master-circleci
+                - zeiss-circleci

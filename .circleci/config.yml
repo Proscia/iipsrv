@@ -21,6 +21,24 @@ jobs:
             # git branch -a  # Can cause build error ":Too long with no output (exceeded 10m0s)"
             git status -uno
 
+      - run:
+          name: Build libCZI
+          command: |
+            cd ..
+            git clone https://${GITHUB_OAUTH}:x-oauth-basic@github.com/${CIRCLE_PROJECT_USERNAME}/libCZI.git
+            shopt -s globstar
+            ls -l **/*.{c,h}*
+
+            cmake -G "Unix Makefiles"
+            make
+
+            # Test for successful builds.
+            ls -l **/*.{a,so} **/CZIcmd
+            [ -f Src/libCZI/liblibCZI.so ] \
+                && [ -f Src/libCZI/liblibCZIStatic.a ] \
+                && [ -f Src/JxrDecode/libJxrDecodeStatic.a ] \
+                && [ -x Src/CZICmd/CZIcmd ]
+
 
 
 workflows:

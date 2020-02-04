@@ -62,17 +62,17 @@ class CZIImage : public IIPImage {
   std::uint8_t image_minification;
   std::vector <unsigned int> image_scales;
 
-  void tweakLine(libCZI::PixelType pixel_type, std::uint32_t width, void* ptrData);
+  void tweakLine(const libCZI::PixelType pixel_type, const std::uint32_t width, void* const ptrData);
 
   RawTile getSingleChannelPyramidLayerTile(
     const int seq, const int ang, const unsigned int res, const unsigned int tile,
-	const int z_layer, const int czi_layer,
-	const libCZI::IntRect roi, const unsigned int tile_w, const unsigned int tile_h);
+	const int z_layer, const int czi_pyr_layer,
+	const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi);
 
   RawTile getAllChannelsPyramidLayerTile(
     const int seq, const int ang, const unsigned int res, const unsigned int tile,
-	const int z_layer, const int czi_layer,
-	const libCZI::IntRect roi, const unsigned int tile_w, const unsigned int tile_h);
+	const int z_layer, const int czi_pyr_layer,
+	const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi);
 
  public:
   /// Default Constructor

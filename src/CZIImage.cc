@@ -34,7 +34,7 @@ using namespace std;  // string, endl
 
 
 void CZIImage::openImage() {
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
 
   // Insist that the czi_reader and tile_buf be NULL.
   if ( czi_reader || tile_buf ) {
@@ -69,11 +69,11 @@ void CZIImage::openImage() {
 
   isSet = true;
 
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
 }
 
 void CZIImage::closeImage() {
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
 
   if ( czi_reader != NULL ) {
     czi_reader->Close();
@@ -85,12 +85,11 @@ void CZIImage::closeImage() {
     tile_buf_size = 0;
   }
 
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
 }
 
 void CZIImage::tile_buf_malloc(tmsize_t size) {
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__
-          << "( size = " << size << " )  BEGIN" << endl;
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "( size " << size << " )  BEGIN" << endl;
 
   // If increasing the size of the tile buffer, delete the old one.
   if (tile_buf && tile_buf_size < size) {
@@ -107,12 +106,12 @@ void CZIImage::tile_buf_malloc(tmsize_t size) {
     tile_buf_size = size;
   }
 
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
 }
 
 
 void CZIImage::loadImageInfo( int seq, int ang ) {
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
 
   currentX = seq;
   currentY = ang;
@@ -135,10 +134,11 @@ void CZIImage::loadImageInfo( int seq, int ang ) {
   subblock_statistics.dimBounds.TryGetInterval(libCZI::DimensionIndex::Z,
                                                &z_layers_start, &z_layers_size);
 
+#if 1  // Useful for debugging.
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-          << ", channels = " << channels
-          << ", z_layers_size = " << z_layers_size
+          << ", channels " << channels << ", z_layers_size " << z_layers_size
           << endl;
+#endif  // Useful for debugging.
 
 
   // Store the list of image dimensions available
@@ -167,11 +167,11 @@ Bounding-Box:
   image_scales.push_back( 1 );
   numResolutions = 1;
 
+#if 1  // Useful for debugging.
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-          << ", full_width = " << full_width << ", full_height = " << full_height
-          << ", image_minification = " << (int)image_minification
-          << ", numResolutions = " << numResolutions
+          << ", full_width " << full_width << ", full_height " << full_height
           << endl;
+#endif // Useful for debugging.
 
   // CZI pyramid layers as virtual width x height images.
   // (Actually stored as CZI subblocks - arbitrarily aligned scaled tiles.)
@@ -199,7 +199,7 @@ scene#0:
         unsigned int w = (full_width -1)/scale +1;
         unsigned int h = (full_height -1)/scale +1;
 
-#if 0  // It's a QPTIFF thing, smaller than 2K x 2K are strips, not tiles.
+#if 1  // It's a QPTIFF thing, smaller than 2K x 2K are strips, not tiles.
         // Ignore downsamples smaller than 2K x 2K.
         // TODO(Leo) Why?  Ask Coleman.  Maybe don't care about viewing anything smaller.
         if (w < 2000 && h < 2000) {
@@ -214,19 +214,23 @@ scene#0:
         image_scales.push_back( scale );
         ++numResolutions;
 
+#if 0  // Useful for debugging.
         logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
                 << ", w " << w << ", h " << h
                 << ", image_minification " << (int)image_minification
                 << ", numResolutions " << numResolutions
                 << endl;
+#endif // Useful for debugging.
       }
     }
   }
 
+#if 1  // Useful for debugging.
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-          << ", image_minification = " << (int)image_minification
-          << ", numResolutions = " << numResolutions
+          << ", image_minification " << (int)image_minification
+          << ", numResolutions " << numResolutions
           << endl;
+#endif // Useful for debugging.
 
 
   /// The base tile pixel dimensions
@@ -339,8 +343,7 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
   // Clean-up:  libCZI and IIPImage terminology about channels and bits per sample disagree.
   //            Also, "JPEGCompressor: JPEG can only handle 8 bit images"
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-          << ", CZI Reader: channels = " << channels << ", bpc = " << bpc
-          << endl;
+          << ", CZI Reader: channels " << channels << ", bpc " << bpc << endl;
 
   if (pixel_type == libCZI::PixelType::Bgr24) {
     // Single CZI Brg24 channel to be rendered as collated IIPSRV 8-bit R/G/B channels.
@@ -358,9 +361,10 @@ CreationDate=2015-10-12T14:05:54.4916631-07:00
     bpc = 8;
   }
 
-  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END"
-          << ", IIP Server: channels = " << channels << ", bpc = " << bpc
-          << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+          << ", IIP Server: channels " << channels << ", bpc " << bpc << endl;
+
+  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
 }
 
 
@@ -423,9 +427,11 @@ CZIcmd -s../../GR57-13\ 2015_10_12__0078.czi \
 
 RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int unused_layers, unsigned int tile )
 {
+#if 0  // Useful for debugging.
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__
-          << "( seq = " << seq << ", ang = " << ang << ", res = " << res
-          << ", layers = " << unused_layers << ", tile = " << tile << " )  BEGIN" << endl;
+          << "( seq " << seq << ", ang " << ang << ", res " << res
+          << ", layers " << unused_layers << ", tile " << tile << " )  BEGIN" << endl;
+#endif // Useful for debugging.
 
   // Check the resolution exists
   if ( res > (numResolutions - 1) ) {
@@ -503,8 +509,8 @@ RawTile CZIImage::getTile( int seq, int ang, unsigned int res, int unused_layers
   libCZI::IntRect roi{logical_x, logical_y, logical_w, logical_h};
 
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-          << ", tile x,y,w,h = (" << tile_x << "," << tile_y << "," << tile_w << "," << tile_h << ")"
-          << ", scale = " << scale << ", logical roi = " << roi
+          << ", tile x,y,w,h (" << tile_x << "," << tile_y << "," << tile_w << "," << tile_h << ")"
+          << ", scale " << scale << ", logical roi " << roi
           << endl;
 
   int z_layer = 0;  // For now, just first Z-layer.
@@ -552,9 +558,9 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
     const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi)
 {
   logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__
-          << "( seq = " << seq << ", ang = " << ang << ", res = " << res << ", tile = " << tile
-          << ", z_layer = " << z_layer << ", czi_pyr_layer = " << czi_pyr_layer
-          << ", tile_w = " << tile_w << ", tile_h = " << tile_h << ", roi = " << roi
+          << "( seq " << seq << ", ang " << ang << ", res " << res << ", tile " << tile
+          << ", z_layer " << z_layer << ", czi_pyr_layer " << czi_pyr_layer
+          << ", tile_w " << tile_w << ", tile_h " << tile_h << ", roi " << roi
           << " )  BEGIN" << endl;
 
   /// For brightfield images, using Command::SingleChannelPyramidTileAccessor works well.
@@ -568,74 +574,67 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
     coordinate.Set(libCZI::DimensionIndex::Z, z_layers_start + z_layer);
   }
 
-  libCZI::ISingleChannelPyramidLayerTileAccessor::PyramidLayerInfo pyrLyrInfo;
-  pyrLyrInfo.minificationFactor = image_minification;
-  pyrLyrInfo.pyramidLayerNo = czi_pyr_layer;
+  libCZI::ISingleChannelPyramidLayerTileAccessor::PyramidLayerInfo pyr_layer_info;
+  pyr_layer_info.minificationFactor = image_minification;
+  pyr_layer_info.pyramidLayerNo = czi_pyr_layer;
 
-  libCZI::ISingleChannelPyramidLayerTileAccessor::Options scptaOptions;
-  scptaOptions.Clear();
-  //  scptaOptions.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
+  libCZI::ISingleChannelPyramidLayerTileAccessor::Options scpta_options;
+  scpta_options.Clear();
+  //  scpta_options.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
   libCZI::RgbFloatColor bright_bkgd{ 0.9, 0.9, 0.9 };  // Light for brightfield images.
   libCZI::RgbFloatColor fluor_bkgd{ 0.0, 0.0, 0.0 };  // Black for fluorescence channels.
-  scptaOptions.backGroundColor = (channels_size == 1 ? bright_bkgd : fluor_bkgd);
+  scpta_options.backGroundColor = (channels_size == 1 ? bright_bkgd : fluor_bkgd);
 
   auto accessor = czi_reader->CreateSingleChannelPyramidLayerTileAccessor();
   // std::shared_ptr<libCZI::IBitmapData>
-  auto bitmap = accessor->Get(roi, &coordinate, pyrLyrInfo, &scptaOptions);
+  auto bitmap = accessor->Get(roi, &coordinate, pyr_layer_info, &scpta_options);
 
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-          // // << "  bitmap: width = " << bitmap->GetWidth()
-          // // << ", height = " << bitmap->GetHeight()
-          // // << ", pixel type = " << (int) bitmap->GetPixelType()
-          // // << ", size = " << bitmap->GetSize()
-          // // << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+          << "  bitmap: width " << bitmap->GetWidth() << ", height " << bitmap->GetHeight()
+          << ", pixel type " << (int) bitmap->GetPixelType() << ", size " << bitmap->GetSize()
+          << endl;
 
   // See:  libCZI/Src/CZICmd/SaveBitmap.cpp
   //    -- CSaveData::Save(), CSaveData::SaveBgr24(), CSaveData::SaveGray16(),
   //    -- CSaveData::SavePngTweakLineBeforeWritng(), CSaveData::SavePng()
-  libCZI::ScopedBitmapLockerP lckScoped{bitmap.get()};
+  libCZI::ScopedBitmapLockerP locked_bitmap{bitmap.get()};
   std::uint32_t tile_buf_stride =
-    (lckScoped.stride / bitmap->GetWidth()) * bitmap->GetWidth();
+    (locked_bitmap.stride / bitmap->GetWidth()) * bitmap->GetWidth();
 
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-          // // << "  lckScoped: stride = " << lckScoped.stride
-          // // << ", size = " << lckScoped.size
-          // // << "; tile_buf_stride = " << tile_buf_stride
-          // // << endl;
+  tile_buf_malloc( locked_bitmap.size );
 
-  tile_buf_malloc( lckScoped.size );
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+          << "  locked_bitmap: stride " << locked_bitmap.stride << ", size " << locked_bitmap.size
+          << "; tile_buf: stride " << tile_buf_stride << ", size " << tile_buf_size
+          << endl;
 
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
-
-  std::unique_ptr<void, decltype(&free)> lineToTweak(malloc(lckScoped.stride), &free);
+  std::unique_ptr<void, decltype(&free)> lineToTweak(malloc(locked_bitmap.stride), &free);
   for (std::uint32_t h = 0; h < bitmap->GetHeight(); ++h) {
-    void *roi_ptr = (((char *) lckScoped.ptrDataRoi) + h * lckScoped.stride);
-    memcpy(lineToTweak.get(), roi_ptr, lckScoped.stride);
+    void *roi_ptr = (((char *) locked_bitmap.ptrDataRoi) + h * locked_bitmap.stride);
+    memcpy(lineToTweak.get(), roi_ptr, locked_bitmap.stride);
     tweakLine(bitmap->GetPixelType(), bitmap->GetWidth(), lineToTweak.get());
 
     void *tile_buf_ptr = (((char *) tile_buf) + h * tile_buf_stride);
     memcpy(tile_buf_ptr, lineToTweak.get(), tile_buf_stride);
   }
 
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << "  RawTile(): tile = " << tile << ", res = " << res
-  // //         << ", seq = " << seq << ", ang = " << ang
-  // //         << ", tile_w = " << tile_w << ", tile_h = " << tile_h
-  // //         << ", channels = " << channels << ", bpc = " << bpc
-  // //         << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+          << "  RawTile(): tile " << tile << ", res " << res
+          << ", seq " << seq << ", ang " << ang
+          << ", tile_w " << tile_w << ", tile_h " << tile_h
+          << ", channels " << channels << ", bpc " << bpc
+          << endl;
 
   RawTile rawtile( tile, res, seq, ang, tile_w, tile_h, channels, bpc );
   rawtile.data = tile_buf;
-  rawtile.dataLength = lckScoped.size;
+  rawtile.dataLength = locked_bitmap.size;
   rawtile.filename = getImagePath();
   rawtile.timestamp = timestamp;
   rawtile.memoryManaged = 0;
   //rawtile.padded = true;  // TODO(Leo) Huh? Why padded for QPTIFF, not for OpenSlide?
   rawtile.sampleType = sampleType;
 
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << "  END"
-  // //         << "  [channels_size == " << channels_size << "]" << endl;
-
+//  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
   return rawtile;
 }
 
@@ -669,46 +668,47 @@ public:
 // Multiple CZI channels (usu. fluorescence, Gray16).
 RawTile CZIImage::getAllChannelsPyramidLayerTile(
     const int seq, const int ang, const unsigned int res, const unsigned int tile,
-	const int z_layer, const int czi_pyr_layer,
-	const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi)
+    const int z_layer, const int czi_pyr_layer,
+    const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi)
 {
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << "  BEGIN" << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__
+          << "( seq " << seq << ", ang " << ang << ", res " << res << ", tile " << tile
+          << ", z_layer " << z_layer << ", czi_pyr_layer " << czi_pyr_layer
+          << ", tile_w " << tile_w << ", tile_h " << tile_h << ", roi " << roi
+          << " )  BEGIN" << endl;
 
-  /// For fluorescence images, ScalingChannelComposite works well.
+  /// For fluorescence images, using Command::ScalingChannelComposite works well.
   // See:  libCZI/Src/CZICmd/execute.cpp -- class CExecuteScalingChannelComposite -- execute().
 
   libCZI::CDimCoordinate coordinate;
-  if (z_layers_size > 0)
+  if (z_layers_size > 0) {
     coordinate.Set(libCZI::DimensionIndex::Z, z_layers_start + z_layer);
+  }
 
-  libCZI::ISingleChannelPyramidLayerTileAccessor::PyramidLayerInfo pyrLyrInfo;
-  pyrLyrInfo.minificationFactor = image_minification;
-  pyrLyrInfo.pyramidLayerNo = czi_pyr_layer;
+  libCZI::ISingleChannelPyramidLayerTileAccessor::PyramidLayerInfo pyr_layer_info;
+  pyr_layer_info.minificationFactor = image_minification;
+  pyr_layer_info.pyramidLayerNo = czi_pyr_layer;
 
-  libCZI::ISingleChannelPyramidLayerTileAccessor::Options scptaOptions;
-  scptaOptions.Clear();
-  //  scptaOptions.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
+  libCZI::ISingleChannelPyramidLayerTileAccessor::Options scpta_options;
+  scpta_options.Clear();
+  //  scpta_options.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
   libCZI::RgbFloatColor bright_bkgd{ 0.9, 0.9, 0.9 };  // Light for brightfield images.
   libCZI::RgbFloatColor fluor_bkgd{ 0.0, 0.0, 0.0 };  // Black for fluorescence channels.
-  scptaOptions.backGroundColor = (channels_size == 1 ? bright_bkgd : fluor_bkgd);
+  scpta_options.backGroundColor = (channels_size == 1 ? bright_bkgd : fluor_bkgd);
 
 
-  std::shared_ptr<libCZI::IDisplaySettings> dsplSettings = (czi_reader
-                                                            ->ReadMetadataSegment()
-                                                            ->CreateMetaFromMetadataSegment()
-                                                            ->GetDocumentInfo()
-                                                            ->GetDisplaySettings());
-  std::vector<int> activeChannels = libCZI::CDisplaySettingsHelper::GetActiveChannels(dsplSettings.get());
-
-
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+  std::shared_ptr<libCZI::IDisplaySettings> full_display_settings = (czi_reader
+                                                                     ->ReadMetadataSegment()
+                                                                     ->CreateMetaFromMetadataSegment()
+                                                                     ->GetDocumentInfo()
+                                                                     ->GetDisplaySettings());
+  std::vector<int> active_channels = libCZI::CDisplaySettingsHelper::GetActiveChannels(full_display_settings.get());
 
   auto accessor = czi_reader->CreateSingleChannelPyramidLayerTileAccessor();
+  std::vector<shared_ptr<libCZI::IBitmapData>> channel_bitmaps;
 
-  /*static*/ std::vector<shared_ptr<libCZI::IBitmapData>> channelBitmaps;
-
-  for (int i = 0; i < (int) activeChannels.size(); ++i) {
-    int channel_num = activeChannels.at(i);
+  for (int i = 0; i < (int) active_channels.size(); ++i) {
+    int channel_num = active_channels.at(i);
 
     /*if (subblock_statistics.dimBounds.IsValid(DimensionIndex::C))*/ {
       // That's a cornerstone case - or a loophole in the specification: if the document
@@ -718,102 +718,69 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
       coordinate.Set(libCZI::DimensionIndex::C, channel_num);
     }
 
-    channelBitmaps.emplace_back(accessor->Get(roi, &coordinate, pyrLyrInfo, &scptaOptions));
+    channel_bitmaps.emplace_back(accessor->Get(roi, &coordinate, pyr_layer_info, &scpta_options));
   }
 
 
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+  std::uint32_t tile_buf_width = channel_bitmaps[0]->GetWidth();
+  std::uint32_t tile_buf_height = channel_bitmaps[0]->GetHeight();
+  tile_buf_malloc(active_channels.size() * tile_buf_width * tile_buf_height);
 
-  libCZI::CDisplaySettingsHelper dsplHlp;
-  dsplHlp.Initialize(dsplSettings.get(), [&](int chIndx)->libCZI::PixelType {
-      int idx = (int) std::distance(activeChannels.cbegin(),
-                                    std::find(activeChannels.cbegin(),
-                                              activeChannels.cend(),
-                                              chIndx));
-      return channelBitmaps[idx]->GetPixelType();
-    });
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+          << ", tile_buf_size " << tile_buf_size
+          << ", active_channels.size() " << active_channels.size()
+          << ", tile_buf_width " << tile_buf_width << ", tile_buf_height " << tile_buf_height
+          << ", channels_size " << channels_size << ", tile_w " << tile_w << ", tile_h " << tile_h
+          << endl;
 
+  
+  for (int ch = 0; ch < (int) active_channels.size(); ++ch) {
+    std::shared_ptr<libCZI::IDisplaySettings> single_display_settings(
+        new SingleDisplaySettingsWrapper(full_display_settings, ch));
 
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+    std::vector<shared_ptr<libCZI::IBitmapData>> single_channel_bitmaps{ channel_bitmaps[ch] };
 
-  // TODO(Leo) Let's try Gray8 collated.
-  // TODO(Leo) Refactor TRY_GRAY8_COLLATED ============================================================
+    libCZI::CDisplaySettingsHelper single_settings_helper;
+    single_settings_helper.Initialize(single_display_settings.get(),
+                                      [&](int chIndx)->libCZI::PixelType {
+                                        return single_channel_bitmaps[0]->GetPixelType();
+                                      });
 
+    logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+            << ", channel " << ch
+            << ": weight " << single_settings_helper.GetChannelInfosArray()[0].weight
+            << ", enableTinting " << single_settings_helper.GetChannelInfosArray()[0].enableTinting
+            << ", tinting bgr " << (int)single_settings_helper.GetChannelInfosArray()[0].tinting.color.b
+            << "." << (int)single_settings_helper.GetChannelInfosArray()[0].tinting.color.g
+            << "." << (int)single_settings_helper.GetChannelInfosArray()[0].tinting.color.r
+            << ", blackPoint " << single_settings_helper.GetChannelInfosArray()[0].blackPoint
+            << ", whitePoint " << single_settings_helper.GetChannelInfosArray()[0].whitePoint
+            << endl;
 
-  //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
-
-
-  // TODO(Leo) Use display settings to composite each Gray16 bitmap to Gray8 bitmap.
-  // TODO(Leo) For now, just copy Gray16 bitmaps to Gray8 bitmaps.
-
-  tile_buf_malloc(activeChannels.size()
-              * channelBitmaps[0]->GetWidth()
-              * channelBitmaps[0]->GetHeight());
-
-  std::uint32_t tile_buf_width = channelBitmaps[0]->GetWidth();
-  std::uint32_t tile_buf_height = channelBitmaps[0]->GetHeight();
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << ", tile_buf_size =" << tile_buf_size
-  // //         << ", activeChannels.size() = " << activeChannels.size()
-  // //         << ", channels_size = " << channels_size
-  // //         << ", tile_buf_width = " << tile_buf_width
-  // //         << ", tile_buf_height = " << tile_buf_height
-  // //         << endl;
-
-  for (int ch = 0; ch < (int) activeChannels.size(); ++ch) {
-	int chx = activeChannels.size() - 1 - ch;
-	//    int chx = ch;
-
-
-
-
-	std::shared_ptr<libCZI::IDisplaySettings> single_display_settings(
-        new SingleDisplaySettingsWrapper(dsplSettings, chx));
-
-	std::vector<shared_ptr<libCZI::IBitmapData>> single_channel_bitmaps{ channelBitmaps[chx] };
-
-	libCZI::CDisplaySettingsHelper display_settings_helper;
-	display_settings_helper.Initialize(single_display_settings.get(),
-									   [&](int chIndx)->libCZI::PixelType {
-										 return single_channel_bitmaps[0]->GetPixelType();
-									   });
-
-    // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-	// // 		<< ",channel " << chx
-	// // 		<< ": weight " << display_settings_helper.GetChannelInfosArray()[0].weight
-	// // 		<< ", enableTinting " << display_settings_helper.GetChannelInfosArray()[0].enableTinting
-	// // 		<< ", tinting bgr " << (int)display_settings_helper.GetChannelInfosArray()[0].tinting.color.b
-	// // 		<< "." << (int)display_settings_helper.GetChannelInfosArray()[0].tinting.color.g
-	// // 		<< "." << (int)display_settings_helper.GetChannelInfosArray()[0].tinting.color.r
-	// // 		<< ", blackPoint " << display_settings_helper.GetChannelInfosArray()[0].blackPoint
-	// // 		<< ", whitePoint " << display_settings_helper.GetChannelInfosArray()[0].whitePoint
-	// // 		<< endl;
-
-	// Manually alter channel info to full gray-scale (#FFFFFF) tinting.
-    libCZI::Compositors::ChannelInfo single_channel_info = display_settings_helper.GetChannelInfosArray()[0];
+    // Manually alter channel info to full gray-scale (#FFFFFF) tinting.
+    libCZI::Compositors::ChannelInfo single_channel_info = single_settings_helper.GetChannelInfosArray()[0];
     if (single_channel_info.enableTinting)
       single_channel_info.tinting.color.r =
           single_channel_info.tinting.color.g =
           single_channel_info.tinting.color.b = 255;
 
-	// Composite single channel to 8-bit gray-scale, using the channel's display settings.
+    // Use each channel's display settings to composite each single channel Gray16 bitmap to a Gray8 bitmap.
     shared_ptr<libCZI::IBitmapData> gray8_bitmap = libCZI::Compositors::ComposeMultiChannel_Gray8(
         (int) single_channel_bitmaps.size(),
         std::begin(single_channel_bitmaps),
         &single_channel_info);
-	
 
     libCZI::ScopedBitmapLockerP locked_gray8{gray8_bitmap.get()};
 
-    // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-    // //         << ", locked_gray8.size = " << locked_gray8.size
-    // //         << ", locked_gray8.stride = " << locked_gray8.stride
-    // //         << ", GetWidth() = " << channelBitmaps[ch]->GetWidth() << " <=> " << gray8_bitmap->GetWidth()
-    // //         << ", GetHeight() = " << channelBitmaps[ch]->GetHeight() << " <=> " << gray8_bitmap->GetHeight()
-    // //         << endl;
+    logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+            << ", locked_gray8.size " << locked_gray8.size
+            << ", locked_gray8.stride " << locked_gray8.stride
+            << ", GetWidth() " << channel_bitmaps[ch]->GetWidth() << " <=> " << gray8_bitmap->GetWidth()
+            << ", GetHeight() " << channel_bitmaps[ch]->GetHeight() << " <=> " << gray8_bitmap->GetHeight()
+            << endl;
 
 
-	// Collate composited Gray8 channel into channels deep tile buffer.
+    // Collate composited Gray8 channel into channels deep tile buffer.
     for (std::uint32_t h = 0; h < tile_buf_height; ++h) {
       for (std::uint32_t w = 0; w < tile_buf_width; ++w) {
         std::uint32_t tile_px = h * tile_buf_width + w;
@@ -825,28 +792,22 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
     }
   }
 
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-  // //         << "  RawTile(): tile = " << tile << ", res = " << res
-  // //         << ", seq = " << seq << ", ang = " << ang
-  // //         << ", tile_w = " << tile_w << ", tile_h = " << tile_h
-  // //         << ", channels = " << channels << ", bpc = " << bpc
-  // //         << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+          << "  RawTile(): tile " << tile << ", res " << res
+          << ", seq " << seq << ", ang " << ang
+          << ", tile_w " << tile_w << ", tile_h " << tile_h
+          << ", channels " << channels << ", bpc " << bpc
+          << endl;
 
   RawTile rawtile( tile, res, seq, ang, tile_w, tile_h, channels, bpc );
   rawtile.data = tile_buf;
-  rawtile.dataLength = tile_buf_size;  //lckScoped.size;
+  rawtile.dataLength = tile_buf_size;
   rawtile.filename = getImagePath();
   rawtile.timestamp = timestamp;
   rawtile.memoryManaged = 0;
-#if 0  // TODO(Leo) Hmmmm
-  rawtile.padded = true;  // TODO(Leo) Huh? Why padded for QPTIFF, not for OpenSlide?
-#else  // TODO(Leo) Hmmmm
   //rawtile.padded = true;  // TODO(Leo) Huh? Why padded for QPTIFF, not for OpenSlide?
-#endif  // TODO(Leo) Hmmmm
   rawtile.sampleType = sampleType;
 
-  // // //////logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << "  END"
-  // //         << "  [channels_size == " << channels_size << "]" << endl;
-
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
   return rawtile;
 }

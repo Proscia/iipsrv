@@ -26,6 +26,7 @@ jobs:
           command: |
             cd ..
             git clone https://${GITHUB_OAUTH}:x-oauth-basic@github.com/${CIRCLE_PROJECT_USERNAME}/libCZI.git
+            cd libCZI
 
             cmake -G "Unix Makefiles"
             make

@@ -46,7 +46,7 @@ jobs:
 
             ./autogen.sh
             ./configure
-            ./make
+            make
 
       - run:
           name: Publish iipsrv.fcgi

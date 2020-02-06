@@ -34,7 +34,7 @@ using namespace std;  // string, endl
 
 
 void CZIImage::openImage() {
-  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;  // TEMP(Leo)
 
   // Insist that the czi_reader and tile_buf be NULL.
   if ( czi_reader || tile_buf ) {
@@ -73,7 +73,7 @@ void CZIImage::openImage() {
 }
 
 void CZIImage::closeImage() {
-  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;  // TEMP(Leo)
 
   if ( czi_reader != NULL ) {
     czi_reader->Close();
@@ -111,7 +111,7 @@ void CZIImage::tile_buf_malloc(tmsize_t size) {
 
 
 void CZIImage::loadImageInfo( int seq, int ang ) {
-  //  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
+  logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;  // TEMP(Leo)
 
   currentX = seq;
   currentY = ang;

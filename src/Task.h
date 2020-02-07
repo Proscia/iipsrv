@@ -24,6 +24,7 @@
 
 
 #include <string>
+#include <memory>  // std::shared_ptr
 
 #include "IIPImage.h"
 #include "IIPResponse.h"
@@ -46,6 +47,10 @@
 #define MAX_AGE 86400
 
 
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+typedef HASHMAP <std::string,std::shared_ptr<IIPImage>> imageCacheMapType;
+
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
 #ifdef HAVE_EXT_POOL_ALLOCATOR
 #include <ext/pool_allocator.h>
@@ -58,6 +63,7 @@ typedef HASHMAP < std::string, IIPImage,
 typedef HASHMAP <std::string,IIPImage> imageCacheMapType;
 #endif
 
+#endif // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
 
 

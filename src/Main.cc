@@ -1,21 +1,21 @@
 /*
-    IIP FCGI server module - Main loop.
+  IIP FCGI server module - Main loop.
 
-    Copyright (C) 2000-2019 Ruven Pillay
+  Copyright (C) 2000-2019 Ruven Pillay
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 3 of the License, or
+  (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software Foundation,
+  Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
 
@@ -146,9 +146,9 @@ void IIPSignalHandler( int signal )
 #endif
 
     logfile << endl << "Caught " << sigstr << " signal. "
-	    << "Terminating after " << IIPcount << " accesses" << endl
-	    << date << endl
-	    << "<----------------------------------->" << endl << endl;
+            << "Terminating after " << IIPcount << " accesses" << endl
+            << date << endl
+            << "<----------------------------------->" << endl << endl;
     logfile.close();
   }
 
@@ -200,10 +200,10 @@ int main( int argc, char *argv[] )
       char *date = ctime( &current_time );
 
       logfile << "<----------------------------------->" << endl
-	      << date << endl
-	      << "IIPImage Server. Version " << version << endl
-	      << "*** Ruven Pillay <ruven@users.sourceforge.net> ***" << endl << endl
-	      << "Verbosity level set to " << loglevel << endl;
+              << date << endl
+              << "IIPImage Server. Version " << version << endl
+              << "*** Ruven Pillay <ruven@users.sourceforge.net> ***" << endl << endl
+              << "Verbosity level set to " << loglevel << endl;
     }
 
   }
@@ -289,8 +289,8 @@ int main( int argc, char *argv[] )
 
   // Set up our watermark object
   Watermark watermark( Environment::getWatermark(),
-		       Environment::getWatermarkOpacity(),
-		       Environment::getWatermarkProbability() );
+                       Environment::getWatermarkOpacity(),
+                       Environment::getWatermarkProbability() );
 
 
   // Get the CORS setting
@@ -393,12 +393,12 @@ int main( int argc, char *argv[] )
       string prtcl = protocol;
       transform( prtcl.begin(), prtcl.end(), prtcl.begin(), ::tolower );
       if( prtcl == "iip" || prtcl == "iiif" || prtcl == "zoomify" || prtcl == "deepzoom" ){
-	supported_protocol = true;
+        supported_protocol = true;
       }
 
       if( loglevel > 0 ){
-	logfile << "Setting URI mapping to " << uri_map_string << ". "
-		<< ((supported_protocol)?"S":"Uns") << "upported protocol: " << protocol << endl;
+        logfile << "Setting URI mapping to " << uri_map_string << ". "
+                << ((supported_protocol)?"S":"Uns") << "upported protocol: " << protocol << endl;
       }
 
       // IIP protocol requires "FIF" as first argument
@@ -410,19 +410,19 @@ int main( int argc, char *argv[] )
     else if( loglevel > 0 ) logfile << "Malformed URI map: " << uri_map_string << endl;
 
   }
-  
+
 
   // Try to load our watermark
   if( watermark.getImage().length() > 0 ){
     watermark.init();
     if( loglevel >= 1 ){
       if( watermark.isSet() ){
-	logfile << "Loaded watermark image '" << watermark.getImage()
-		<< "': setting probability to " << watermark.getProbability()
-		<< " and opacity to " << watermark.getOpacity() << endl;
+        logfile << "Loaded watermark image '" << watermark.getImage()
+                << "': setting probability to " << watermark.getProbability()
+                << " and opacity to " << watermark.getOpacity() << endl;
       }
       else{
-	logfile << "Unable to load watermark image '" << watermark.getImage() << "'" << endl;
+        logfile << "Unable to load watermark image '" << watermark.getImage() << "'" << endl;
       }
     }
   }
@@ -439,7 +439,7 @@ int main( int argc, char *argv[] )
   if( loglevel >= 1 ){
     if( memcached.connected() ){
       logfile << "Memcached support enabled. Connected to servers: '" << memcached_servers
-	      << "' with timeout " << memcached_timeout << endl;
+              << "' with timeout " << memcached_timeout << endl;
     }
     else logfile << "Unable to connect to Memcached servers: '" << memcached.error() << "'" << endl;
   }
@@ -473,17 +473,17 @@ int main( int argc, char *argv[] )
     while( izer.hasMoreTokens() ){
       
       try{
-	string token = izer.nextToken();
-	DSOImage module;
-	module.Load( token );
-	string type = module.getImageType();
-	if( loglevel >= 1 ){
-	  logfile << "Loading external module: " << module.getDescription() << endl;
-	}
-	moduleList[ type ] = token;
+        string token = izer.nextToken();
+        DSOImage module;
+        module.Load( token );
+        string type = module.getImageType();
+        if( loglevel >= 1 ){
+          logfile << "Loading external module: " << module.getDescription() << endl;
+        }
+        moduleList[ type ] = token;
       }
       catch( const string& error ){
-	if( loglevel >= 1 ) logfile << error << endl;
+        if( loglevel >= 1 ) logfile << error << endl;
       }
 
     }
@@ -516,8 +516,8 @@ int main( int argc, char *argv[] )
 
   if( loglevel >= 1 ){
     logfile << endl << "Initialisation Complete." << endl
-	    << "<----------------------------------->"
-	    << endl << endl;
+            << "<----------------------------------->"
+            << endl << endl;
   }
 
 
@@ -616,48 +616,48 @@ int main( int argc, char *argv[] )
       //  and the full REQUEST_URI variable
       if( !uri_map.empty() ){
 
-	string prefix = uri_map.begin()->first;
-	string command = uri_map.begin()->second;
+        string prefix = uri_map.begin()->first;
+        string command = uri_map.begin()->second;
 
-	header = FCGX_GetParam( "REQUEST_URI", request.envp );
-	const string request_uri = (header!=NULL) ? header : "";
+        header = FCGX_GetParam( "REQUEST_URI", request.envp );
+        const string request_uri = (header!=NULL) ? header : "";
 
-	// Try to find the prefix at the beginning of request URI
-	// Note that the first character will always be "/"
-	size_t len = prefix.length();
-	if( (len==0) || (request_uri.find(prefix)==1) ){
-	  // This is indeed a mapped request, so map our prefix with the appropriate protocol
-	  unsigned int start = (len>0) ? len+2 : 1; // Add 2 to remove both leading and trailing slashes
-	  // Strip out any query string if we are in prefix mode
-	  size_t q = request_uri.find_first_of('?');
-	  unsigned int end = (q==string::npos) ? request_uri.length() : q;
-	  request_string = command + "=" + request_uri.substr( start, end-start );
-	  if( loglevel >= 2 ) logfile << "Request URI mapped to " << request_string << endl;
-	}
+        // Try to find the prefix at the beginning of request URI
+        // Note that the first character will always be "/"
+        size_t len = prefix.length();
+        if( (len==0) || (request_uri.find(prefix)==1) ){
+          // This is indeed a mapped request, so map our prefix with the appropriate protocol
+          unsigned int start = (len>0) ? len+2 : 1; // Add 2 to remove both leading and trailing slashes
+          // Strip out any query string if we are in prefix mode
+          size_t q = request_uri.find_first_of('?');
+          unsigned int end = (q==string::npos) ? request_uri.length() : q;
+          request_string = command + "=" + request_uri.substr( start, end-start );
+          if( loglevel >= 2 ) logfile << "Request URI mapped to " << request_string << endl;
+        }
       }
 #endif
 
       // If the request string hasn't been set through a URI map, get it from the QUERY_STRING variable
       if( request_string.empty() ){
-	// Get the query into a string
+        // Get the query into a string
 #ifdef DEBUG
-	header = argv[1];
+        header = argv[1];
 #else
-	header = FCGX_GetParam( "QUERY_STRING", request.envp );
+        header = FCGX_GetParam( "QUERY_STRING", request.envp );
 #endif
 
-	request_string = (header!=NULL)? header : "";
+        request_string = (header!=NULL)? header : "";
       }
 
 
 
       // Check that we actually have a request string
       if( request_string.empty() ){
-	throw string( "QUERY_STRING not set" );
+        throw string( "QUERY_STRING not set" );
       }
 
       if( loglevel >=2 ){
-	logfile << "Full Request is " << request_string << endl;
+        logfile << "Full Request is " << request_string << endl;
       }
 
 
@@ -685,10 +685,10 @@ int main( int argc, char *argv[] )
 
       // Check for IF_MODIFIED_SINCE
       if( (header = FCGX_GetParam("HTTP_IF_MODIFIED_SINCE", request.envp)) ){
-	session.headers["HTTP_IF_MODIFIED_SINCE"] = string(header);
-	if( loglevel >= 2 ){
-	  logfile << "HTTP Header: If-Modified-Since: " << header << endl;
-	}
+        session.headers["HTTP_IF_MODIFIED_SINCE"] = string(header);
+        if( loglevel >= 2 ){
+          logfile << "HTTP Header: If-Modified-Since: " << header << endl;
+        }
       }
 #endif
 
@@ -696,13 +696,13 @@ int main( int argc, char *argv[] )
       // Check whether this exists in memcached, but only if we haven't had an if_modified_since
       // request, which should always be faster to send
       if( !header || session.headers["HTTP_IF_MODIFIED_SINCE"].empty() ){
-	char* memcached_response = NULL;
-	if( (memcached_response = memcached.retrieve( request_string )) ){
-	  writer.putStr( memcached_response, memcached.length() );
-	  writer.flush();
-	  free( memcached_response );
-	  throw( 100 );
-	}
+        char* memcached_response = NULL;
+        if( (memcached_response = memcached.retrieve( request_string )) ){
+          writer.putStr( memcached_response, memcached.length() );
+          writer.flush();
+          free( memcached_response );
+          throw( 100 );
+        }
       }
 #endif
 
@@ -714,41 +714,41 @@ int main( int argc, char *argv[] )
 
       Tokenizer izer( request_string, "&" );
       while( izer.hasMoreTokens() ){
-	pair <string,string> p;
-	string token = izer.nextToken();
-	int n = token.find_first_of( "=" );
-	p.first = token.substr( 0, n );
-	p.second = token.substr( n+1, token.length() );
-	if( p.first.length() && p.second.length() ) requests.push_back( p );
+        pair <string,string> p;
+        string token = izer.nextToken();
+        int n = token.find_first_of( "=" );
+        p.first = token.substr( 0, n );
+        p.second = token.substr( n+1, token.length() );
+        if( p.first.length() && p.second.length() ) requests.push_back( p );
       }
 
 
       i = 0;
       for( commands = requests.begin(); commands != requests.end(); commands++ ){
 
-	string command = (*commands).first;
-	string argument = (*commands).second;
+        string command = (*commands).first;
+        string argument = (*commands).second;
 
-	if( loglevel >= 2 ){
-	  logfile << "[" << i+1 << "/" << requests.size() << "]: Command / Argument is " << command << " : " << argument << endl;
-	  i++;
-	}
+        if( loglevel >= 2 ){
+          logfile << "[" << i+1 << "/" << requests.size() << "]: Command / Argument is " << command << " : " << argument << endl;
+          i++;
+        }
 
-	task = Task::factory( command );
-	if( task ) task->run( &session, argument );
+        task = Task::factory( command );
+        if( task ) task->run( &session, argument );
 
-	if( !task ){
-	  if( loglevel >= 1 ) logfile << "Unsupported command: " << command << endl;
-	  // Unsupported command error code is 2 2
-	  response.setError( "2 2", command );
-	}
+        if( !task ){
+          if( loglevel >= 1 ) logfile << "Unsupported command: " << command << endl;
+          // Unsupported command error code is 2 2
+          response.setError( "2 2", command );
+        }
 
 
-	// Delete our task
-	if( task ){
-	  delete task;
-	  task = NULL;
-	}
+        // Delete our task
+        if( task ){
+          delete task;
+          task = NULL;
+        }
 
       }
 
@@ -759,26 +759,26 @@ int main( int argc, char *argv[] )
       ////////////////////////////////////////////////////////
 
       /* Make sure something has actually been sent to the client
-	 If no response has been sent by now, we must have a malformed command
-       */
+         If no response has been sent by now, we must have a malformed command
+      */
       if( (!response.imageSent()) && (!response.isSet()) ){
-	// Malformed command syntax error code is 2 1
-	response.setError( "2 1", request_string );
+        // Malformed command syntax error code is 2 1
+        response.setError( "2 1", request_string );
       }
 
 
       /* Once we have finished parsing all our OBJ and COMMAND requests
-	 send out our response.
-       */
+         send out our response.
+      */
       if( response.isSet() ){
-	if( loglevel >= 4 ){
-	  logfile << "---" << endl <<
-	    response.formatResponse() <<
-	    endl << "---" << endl;
-	}
-	if( writer.printf( response.formatResponse().c_str() ) == -1 ){
-	  if( loglevel >= 1 ) logfile << "Error sending IIPResponse" << endl;
-	}
+        if( loglevel >= 4 ){
+          logfile << "---" << endl <<
+            response.formatResponse() <<
+            endl << "---" << endl;
+        }
+        if( writer.printf( response.formatResponse().c_str() ) == -1 ){
+          if( loglevel >= 1 ) logfile << "Error sending IIPResponse" << endl;
+        }
       }
 
 
@@ -790,13 +790,13 @@ int main( int argc, char *argv[] )
 
 #ifdef HAVE_MEMCACHED
       if( memcached.connected() ){
-	Timer memcached_timer;
-	memcached_timer.start();
-	memcached.store( session.headers["QUERY_STRING"], writer.buffer, writer.sz );
-	if( loglevel >= 3 ){
-	  logfile << "Memcached :: stored " << writer.sz << " bytes in "
-		  << memcached_timer.getTime() << " microseconds" << endl;
-	}
+        Timer memcached_timer;
+        memcached_timer.start();
+        memcached.store( session.headers["QUERY_STRING"], writer.buffer, writer.sz );
+        if( loglevel >= 3 ){
+          logfile << "Memcached :: stored " << writer.sz << " bytes in "
+                  << memcached_timer.getTime() << " microseconds" << endl;
+        }
       }
 #endif
 
@@ -815,26 +815,26 @@ int main( int argc, char *argv[] )
 
       switch( code ){
 
-        case 304:
-	  status = "Status: 304 Not Modified\r\nServer: iipsrv/" + version + "\r\n\r\n";
-	  writer.printf( status.c_str() );
-	  writer.flush();
-          if( loglevel >= 2 ){
-	    logfile << "Sending HTTP 304 Not Modified" << endl;
-	  }
-	  break;
+      case 304:
+        status = "Status: 304 Not Modified\r\nServer: iipsrv/" + version + "\r\n\r\n";
+        writer.printf( status.c_str() );
+        writer.flush();
+        if( loglevel >= 2 ){
+          logfile << "Sending HTTP 304 Not Modified" << endl;
+        }
+        break;
 
-        case 100:
-	  if( loglevel >= 2 ){
-	    logfile << "Memcached hit" << endl;
-	  }
-	  break;
+      case 100:
+        if( loglevel >= 2 ){
+          logfile << "Memcached hit" << endl;
+        }
+        break;
 
-        default:
-          if( loglevel >= 1 ){
-	    logfile << "Unsupported HTTP status code: " << code << endl << endl;
-	  }
-       }
+      default:
+        if( loglevel >= 1 ){
+          logfile << "Unsupported HTTP status code: " << code << endl << endl;
+        }
+      }
     }
 
     /* Catch any errors
@@ -842,23 +842,23 @@ int main( int argc, char *argv[] )
     catch( const string& error ){
 
       if( loglevel >= 1 ){
-	logfile << endl << error << endl << endl;
+        logfile << endl << error << endl << endl;
       }
 
       if( response.errorIsSet() ){
-	if( loglevel >= 4 ){
-	  logfile << "---" << endl <<
-	    response.formatResponse() <<
-	    endl << "---" << endl;
-	}
-	if( writer.printf( response.formatResponse().c_str() ) == -1 ){
-	  if( loglevel >= 1 ) logfile << "Error sending IIPResponse" << endl;
-	}
+        if( loglevel >= 4 ){
+          logfile << "---" << endl <<
+            response.formatResponse() <<
+            endl << "---" << endl;
+        }
+        if( writer.printf( response.formatResponse().c_str() ) == -1 ){
+          if( loglevel >= 1 ) logfile << "Error sending IIPResponse" << endl;
+        }
       }
       else{
-	/* Display our advertising banner ;-)
-	 */
-	writer.printf( response.getAdvert().c_str() );
+        /* Display our advertising banner ;-)
+         */
+        writer.printf( response.getAdvert().c_str() );
       }
 
     }
@@ -866,26 +866,26 @@ int main( int argc, char *argv[] )
     // Image file errors
     catch( const file_error& error ){
       string status = "Status: 404 Not Found\r\nServer: iipsrv/" + version +
-	(response.getCORS().length() ? "\r\n" + response.getCORS() : "") +
-	 "\r\n\r\n" + error.what();
+        (response.getCORS().length() ? "\r\n" + response.getCORS() : "") +
+        "\r\n\r\n" + error.what();
       writer.printf( status.c_str() );
       writer.flush();
       if( loglevel >= 2 ){
-	logfile << error.what() << endl;
-	logfile << "Sending HTTP 404 Not Found" << endl;
+        logfile << error.what() << endl;
+        logfile << "Sending HTTP 404 Not Found" << endl;
       }
     }
 
     // Parameter errors
     catch( const invalid_argument& error ){
       string status = "Status: 400 Bad Request\r\nServer: iipsrv/" + version +
-	(response.getCORS().length() ? "\r\n" + response.getCORS() : "") +
-	"\r\n\r\n" + error.what();
+        (response.getCORS().length() ? "\r\n" + response.getCORS() : "") +
+        "\r\n\r\n" + error.what();
       writer.printf( status.c_str() );
       writer.flush();
       if( loglevel >= 2 ){
-	logfile << error.what() << endl;
-	logfile << "Sending HTTP 400 Bad Request" << endl;
+        logfile << error.what() << endl;
+        logfile << "Sending HTTP 400 Bad Request" << endl;
       }
     }
 
@@ -894,7 +894,7 @@ int main( int argc, char *argv[] )
     catch( ... ){
 
       if( loglevel >= 1 ){
-	logfile << "Error: Default Catch: " << endl << endl;
+        logfile << "Error: Default Catch: " << endl << endl;
       }
 
       /* Display our advertising banner ;-)
@@ -906,12 +906,12 @@ int main( int argc, char *argv[] )
 
     /* Do some cleaning up etc. here after all the potential exceptions
        have been handled
-     */
+    */
     if( task ){
       delete task;
       task = NULL;
     }
-    delete image;
+    // delete image;  // imageCache has shared_prt<IIPImage> responsible for deleting image.
     image = NULL;
     IIPcount ++;
 
@@ -929,7 +929,7 @@ int main( int argc, char *argv[] )
 
     if( loglevel >= 2 ){
       logfile << "image closed and deleted" << endl
-	      << "Server count is " << IIPcount << endl << endl;
+              << "Server count is " << IIPcount << endl << endl;
     }
 
 

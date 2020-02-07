@@ -142,9 +142,9 @@ class CZIImage : public IIPImage {
 
   /// Destructor
   ~CZIImage() {
-    /*TEMP(Leo)*/ logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+    /*TEMP(Leo)*/ logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
     closeImage();
-    /*TEMP(Leo)*/ logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+    /*TEMP(Leo)*/ logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
   };
 
   /// Overloaded functions for opening and closing a CZI image

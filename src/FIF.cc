@@ -84,7 +84,11 @@ void FIF::run( Session* session, const string& src ){
 
 
   // Create our IIPImage object
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+  std::shared_ptr<IIPImage> test;  // Allow test to be pulled from the imageCache of IIPImage subclasses.
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
   IIPImage test;
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
   // Get our image pattern variable
   string filesystem_prefix = Environment::getFileSystemPrefix();
@@ -100,36 +104,42 @@ void FIF::run( Session* session, const string& src ){
   try{
 	bool is_cache_hit{ false };
 
-    // Check whether cache is empty
-    if( session->imageCache->empty() ){
-      if( session->loglevel >= 1 ) *(session->logfile) << "FIF :: Image cache initialization" << endl;
-      test = IIPImage( argument );
-      test.setFileNamePattern( filename_pattern );
-      test.setFileSystemPrefix( filesystem_prefix );
-      test.Initialise();
-    }
-    // If not, look up our object
-    else{
-      // Cache Hit
-      if( session->imageCache->find(argument) != session->imageCache->end() ){
-		is_cache_hit = true;
-        test = (*session->imageCache)[ argument ];
-        timestamp = test.timestamp;       // Record timestamp if we have a cached image
-        if( session->loglevel >= 2 ){
-          *(session->logfile) << "FIF :: Image cache hit. Number of elements: " << session->imageCache->size() << endl;
-        }
-      }
-      // Cache Miss
-      else{
-        if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: Image cache miss" << endl;
-        test = IIPImage( argument );
-        test.setFileNamePattern( filename_pattern );
-        test.setFileSystemPrefix( filesystem_prefix );
-        test.Initialise();
-        // Delete items if our list of images is too long.
-        if( session->imageCache->size() >= MAXIMAGECACHE ) session->imageCache->erase( session->imageCache->begin() );
-      }
-    }
+	// Cache Hit
+	if( session->imageCache->find(argument) != session->imageCache->end() ){
+	  is_cache_hit = true;
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	  test = (*session->imageCache)[ argument ];
+	  timestamp = test->timestamp;       // Record timestamp if we have a cached image
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	  test = (*session->imageCache)[ argument ];
+	  timestamp = test.timestamp;       // Record timestamp if we have a cached image
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	  if( session->loglevel >= 2 ){
+		*(session->logfile) << "FIF :: Image cache hit. Number of elements: " << session->imageCache->size() << endl;
+	  }
+	}
+	// Cache Miss
+	else{
+	  if( session->imageCache->empty() ){
+		if( session->loglevel >= 1 ) *(session->logfile) << "FIF :: Image cache initialization" << endl;
+	  }
+	  else {
+		if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: Image cache miss" << endl;
+		// Delete items if our list of images is too long.
+		if( session->imageCache->size() >= MAXIMAGECACHE ) session->imageCache->erase( session->imageCache->begin() );
+	  }
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	  test = std::shared_ptr<IIPImage>(new IIPImage( argument ));
+	  test->setFileNamePattern( filename_pattern );
+	  test->setFileSystemPrefix( filesystem_prefix );
+	  test->Initialise();
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	  test = IIPImage( argument );
+	  test.setFileNamePattern( filename_pattern );
+	  test.setFileSystemPrefix( filesystem_prefix );
+	  test.Initialise();
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	}
 
 
 
@@ -137,30 +147,55 @@ void FIF::run( Session* session, const string& src ){
       Test for different image types - only TIFF is native for now
     ***************************************************************/
 
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+    ImageFormat format = test->getImageFormat();
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
     ImageFormat format = test.getImageFormat();
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
     if( format == TIF ){
       if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: TIFF image detected" << endl;
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+      *session->image = new TPTImage( *(test.get()) );
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
       *session->image = new TPTImage( test );
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
     }
 #ifdef HAVE_OPENSLIDE
     else if ( format == OPENSLIDE ) {
       if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: OpenSlide image detected" << endl;
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+      *session->image = new OpenSlideImage( *(test.get()) );
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
       *session->image = new OpenSlideImage( test );
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
     }
 #endif
     else if ( format == QPTIFF ) {
       if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: QPTIFF image detected" << endl;
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+      *session->image = new QPTIFFImage( *(test.get()) );
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
       *session->image = new QPTIFFImage( test );
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
     }
     else if ( format == CZI ) {
       if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: CZI image detected" << endl;
-	  if (is_cache_hit/* && false*/) {
+      // TEMP(Leo) Trying stuff...
+	  if (is_cache_hit && false) {
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+        *session->image =  test.get();
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 		//*session->image = new CZIImage( static_cast<CZIImage&>(test) );
 		*session->image =  new CZIImage( static_cast<CZIImage&>((*session->imageCache)[ argument ]) );
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 	  }
 	  else {
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+        *session->image = new CZIImage( *(test.get()) );
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 		*session->image = new CZIImage( test );
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 	  }
     }
 #if defined(HAVE_KAKADU) || defined(HAVE_OPENJPEG)
@@ -168,12 +203,20 @@ void FIF::run( Session* session, const string& src ){
       if( session->loglevel >= 2 )
         *(session->logfile) << "FIF :: JPEG2000 image detected" << endl;
 #if defined(HAVE_KAKADU)
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+      *session->image = new KakaduImage( *(test.get()) );
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
       *session->image = new KakaduImage( test );
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
       if( session->codecOptions["KAKADU_READMODE"] ){
         ((KakaduImage*)*session->image)->kdu_readmode = (KakaduImage::KDU_READMODE) session->codecOptions["KAKADU_READMODE"];
       }
 #elif defined(HAVE_OPENJPEG)
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+      *session->image = new OpenJPEGImage( *(test.get()) );
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
       *session->image = new OpenJPEGImage( test );
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 #endif
     }
 #endif
@@ -217,6 +260,19 @@ void FIF::run( Session* session, const string& src ){
     // Open image and update timestamp
     (*session->image)->openImage();
 
+    // Add this image to our cache, overwriting previous version if it exists
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	// imageCache has shared_prt<IIPImage> responsible for deleting image.
+	if (is_cache_hit && false) {
+	  (*session->imageCache)[argument] = test;
+	}
+	else {
+	  (*session->imageCache)[argument] = std::shared_ptr<IIPImage>(*session->image);
+	}
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+    (*session->imageCache)[argument] = *(*session->image);
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+
     // Check timestamp consistency. If cached timestamp is older, update metadata
     if( timestamp>0 && (timestamp < (*session->image)->timestamp) ){
       if( session->loglevel >= 2 ){
@@ -225,8 +281,23 @@ void FIF::run( Session* session, const string& src ){
       (*session->image)->loadImageInfo( (*session->image)->currentX, (*session->image)->currentY );
     }
 
-    // Add this image to our cache, overwriting previous version if it exists
-    (*session->imageCache)[argument] = *(*session->image);
+	if( session->loglevel >= 2 )
+	  *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+						  << ",  test.use_count() " << test.use_count()
+						  << endl;
+
+// //     // Add this image to our cache, overwriting previous version if it exists
+// // #if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+// // 	// imageCache has shared_prt<IIPImage> responsible for deleting image.
+// // 	if (is_cache_hit && false) {
+// // 	  (*session->imageCache)[argument] = test;
+// // 	}
+// // 	else {
+// // 	  (*session->imageCache)[argument] = std::shared_ptr<IIPImage>(*session->image);
+// // 	}
+// // #else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+// //     (*session->imageCache)[argument] = *(*session->image);
+// // #endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
     if( session->loglevel >= 3 ){
       *(session->logfile) << "FIF :: Created image" << endl;

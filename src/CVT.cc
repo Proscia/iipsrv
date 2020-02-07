@@ -210,7 +210,11 @@ void CVT::send( Session* session ){
     // Insert the histogram into our image cache
     const string key = (*session->image)->getImagePath();
     imageCacheMapType::iterator i = session->imageCache->find(key);
+#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+    if( i != session->imageCache->end() ) (i->second)->histogram = (*session->image)->histogram;
+#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
     if( i != session->imageCache->end() ) (i->second).histogram = (*session->image)->histogram;
+#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
   }
 
 

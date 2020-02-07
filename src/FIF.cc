@@ -146,6 +146,12 @@ void FIF::run( Session* session, const string& src ){
     /***************************************************************
       Test for different image types - only TIFF is native for now
     ***************************************************************/
+	if (is_cache_hit/* && false*/) {
+        *session->image =  test.get();
+	// Add this image to our cache, overwriting previous version if it exists
+		//		//	  (*session->imageCache)[argument] = test;
+	}
+	else {
 
 #if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
     ImageFormat format = test->getImageFormat();
@@ -260,18 +266,30 @@ void FIF::run( Session* session, const string& src ){
     // Open image and update timestamp
     (*session->image)->openImage();
 
-    // Add this image to our cache, overwriting previous version if it exists
-#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+	// Add this image to our cache, overwriting previous version if it exists
 	// imageCache has shared_prt<IIPImage> responsible for deleting image.
-	if (is_cache_hit && false) {
-	  (*session->imageCache)[argument] = test;
-	}
-	else {
 	  (*session->imageCache)[argument] = std::shared_ptr<IIPImage>(*session->image);
 	}
-#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
-    (*session->imageCache)[argument] = *(*session->image);
-#endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+
+
+
+	if( session->loglevel >= 2 )
+	  *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+						  << ",  test.use_count() " << test.use_count()
+						  << endl;
+
+// // 	// Add this image to our cache, overwriting previous version if it exists
+// // #if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+// // 	// imageCache has shared_prt<IIPImage> responsible for deleting image.
+// // 	if (is_cache_hit && false) {
+// // 	  (*session->imageCache)[argument] = test;
+// // 	}
+// // 	else {
+// // 	  (*session->imageCache)[argument] = std::shared_ptr<IIPImage>(*session->image);
+// // 	}
+// // #else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
+// //     (*session->imageCache)[argument] = *(*session->image);
+// // #endif  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
     // Check timestamp consistency. If cached timestamp is older, update metadata
     if( timestamp>0 && (timestamp < (*session->image)->timestamp) ){
@@ -281,10 +299,10 @@ void FIF::run( Session* session, const string& src ){
       (*session->image)->loadImageInfo( (*session->image)->currentX, (*session->image)->currentY );
     }
 
-	if( session->loglevel >= 2 )
-	  *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-						  << ",  test.use_count() " << test.use_count()
-						  << endl;
+	// // if( session->loglevel >= 2 )
+	// //   *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+	// // 					  << ",  test.use_count() " << test.use_count()
+	// // 					  << endl;
 
 // //     // Add this image to our cache, overwriting previous version if it exists
 // // #if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.

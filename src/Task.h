@@ -24,6 +24,7 @@
 
 
 #include <string>
+#include <memory>  // std::shared_ptr
 
 #include "IIPImage.h"
 #include "IIPResponse.h"
@@ -49,13 +50,13 @@
 
 #ifdef HAVE_EXT_POOL_ALLOCATOR
 #include <ext/pool_allocator.h>
-typedef HASHMAP < std::string, IIPImage,
+typedef HASHMAP < std::string, std::shared_ptr<IIPImage>,
 			      __gnu_cxx::hash< const std::string >,
 			      std::equal_to< const std::string >,
-			      __gnu_cxx::__pool_alloc< std::pair<const std::string,IIPImage> >
+			      __gnu_cxx::__pool_alloc< std::pair<const std::string,std::shared_ptr<IIPImage>> >
 			      > imageCacheMapType;
 #else
-typedef HASHMAP <std::string,IIPImage> imageCacheMapType;
+typedef HASHMAP <std::string,std::shared_ptr<IIPImage>> imageCacheMapType;
 #endif
 
 

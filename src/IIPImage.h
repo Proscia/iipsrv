@@ -256,10 +256,13 @@ class IIPImage {
   //  const std::string& getImageFormat() { return format; };
   ImageFormat getImageFormat() { return format; };
 
-  /// Get the image timestamp
+  /// Set the image timestamp
   /** @param s file path
    */
   void updateTimestamp( const std::string& s );
+
+  /// Set the image timestamp from the file path.
+  void updateTimestamp( void ) { updateTimestamp( getFileName( currentX, currentY) ); }
 
   /// Get a HTTP RFC 1123 formatted timestamp
   const std::string getTimestamp();

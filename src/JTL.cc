@@ -102,7 +102,7 @@ void JTL::send( Session* session, int resolution, int tile ){
     // Insert the histogram into our image cache
     const string key = (*session->image)->getImagePath();
     imageCacheMapType::iterator i = session->imageCache->find(key);
-    if( i != session->imageCache->end() ) (i->second).histogram = (*session->image)->histogram;
+    if( i != session->imageCache->end() ) (i->second)->histogram = (*session->image)->histogram;
   }
 
 

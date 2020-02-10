@@ -1,0 +1,69 @@
+version: 2.1
+jobs:
+  vanilla-build:
+    machine:
+      image: ubuntu-1604:201903-01
+
+    steps:
+      - checkout
+
+      - run:
+          name: Where am I?
+          command: |
+            whoami
+            pwd
+            df -h
+            ls -al
+            ls -al ~/.ssh
+            ssh-add -l
+            git config --global --list
+            git remote -v
+            # git branch -a  # Can cause build error ":Too long with no output (exceeded 10m0s)"
+            git status -uno
+
+      - run:
+          name: Build libCZI
+          command: |
+            cd ..
+            git clone https://${GITHUB_OAUTH}:x-oauth-basic@github.com/${CIRCLE_PROJECT_USERNAME}/libCZI.git
+            cd libCZI
+
+            cmake -G "Unix Makefiles"
+            make
+
+            # Test for successful builds.
+            shopt -s globstar
+            ls -l **/*.{a,so} **/CZIcmd
+            [ -f Src/libCZI/liblibCZI.so ] \
+                && [ -f Src/libCZI/liblibCZIStatic.a ] \
+                && [ -f Src/JxrDecode/libJxrDecodeStatic.a ] \
+                && [ -x Src/CZICmd/CZIcmd ]
+
+      - run:
+          name: Build IIPSRV
+          command: |
+            # See:  iipsrv/docker/Dockerfile
+
+            ./autogen.sh
+            ./configure
+            make
+
+      - run:
+          name: Publish iipsrv.fcgi
+          command: |
+            ls -l **/*.fcgi
+
+
+
+workflows:
+  version: 2
+  vanilla_workflow:
+    jobs:
+      - vanilla-build:
+          context: dev-deployment-user
+          filters:
+            branches:
+              only:
+                - master
+                - master-circleci
+                - zeiss-circleci

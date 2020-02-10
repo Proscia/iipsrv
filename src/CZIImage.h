@@ -30,9 +30,10 @@
 #include <tiffio.h>  // tdata_t
 
 
-#if 0  // For debugging to logfile (/tmp/iipsrv.log).
+#if 1  // TEMP(Leo)  // For debugging to logfile (/tmp/iipsrv.log).
 #include <fstream>  // operator<<(), __FILE__,...
 using namespace std;  // endl
+extern int loglevel;
 extern std::ofstream logfile;
 #endif // For debugging to logfile (/tmp/iipsrv.log).
 
@@ -66,20 +67,21 @@ class CZIImage : public IIPImage {
 
   RawTile getSingleChannelPyramidLayerTile(
     const int seq, const int ang, const unsigned int res, const unsigned int tile,
-	const int z_layer, const int czi_pyr_layer,
-	const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi);
+    const int z_layer, const int czi_pyr_layer,
+    const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi);
 
   RawTile getAllChannelsPyramidLayerTile(
     const int seq, const int ang, const unsigned int res, const unsigned int tile,
-	const int z_layer, const int czi_pyr_layer,
-	const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi);
+    const int z_layer, const int czi_pyr_layer,
+    const unsigned int tile_w, const unsigned int tile_h, const libCZI::IntRect roi);
 
  public:
   /// Default Constructor
   CZIImage(): IIPImage(),
     czi_reader( NULL ), tile_buf( NULL ), tile_buf_size(0),
     channels_start(-1), channels_size(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {
-    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+    if (loglevel >= 5)
+      logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
   };
 
   /// Constructer taking the image path as parameter
@@ -88,30 +90,34 @@ class CZIImage : public IIPImage {
   CZIImage( const std::string& path ): IIPImage( path ),
     czi_reader( NULL ), tile_buf( NULL ), tile_buf_size(0),
     channels_start(-1), channels_size(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {
-    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(const std::string& path)" << endl;
+    if (loglevel >= 5)
+      logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(const std::string& path)" << endl;
   };
 
   /// Copy Constructor taking reference to another CZIImage object
   /** @param image IIPImage object
    */
   CZIImage( const CZIImage& image ): IIPImage( image ),
-    czi_reader( NULL ), tile_buf( NULL ), tile_buf_size(0),
+    czi_reader( image.czi_reader ), tile_buf( image.tile_buf ), tile_buf_size( image.tile_buf_size ),
     channels_start( image.channels_start ),
     channels_size( image.channels_size ),
     z_layers_start( image.z_layers_start ),
     z_layers_size( image.z_layers_size ),
     image_minification( image.image_minification ),
     image_scales( image.image_scales ) {
-    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(const CZIImage& image)" << endl;
+    if (loglevel >= 5)
+      logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(const CZIImage& image)" << endl;
   };
 
   /// Assignment Operator
   /** @param image CZIImage object
    */
   CZIImage& operator = ( CZIImage image ) {
-    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(CZIImage image)" << endl;
+    if (loglevel >= 5)
+      logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(CZIImage image)" << endl;
     if ( this != &image ) {
-      // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(CZIImage image)" << endl;
+      if (loglevel >= 5)
+        logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(this != image)" << endl;
       closeImage();
       IIPImage::operator=(image);
       czi_reader = image.czi_reader;
@@ -133,14 +139,17 @@ class CZIImage : public IIPImage {
   CZIImage( const IIPImage& image ): IIPImage( image ),
     czi_reader( NULL ), tile_buf( NULL ), tile_buf_size(0),
     channels_start(-1), channels_size(-1), z_layers_start(-1), z_layers_size(-1), image_minification(-1) {
-    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(const IIPImage& image)" << endl;
+    if (loglevel >= 5)
+      logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(const IIPImage& image)" << endl;
   };
 
   /// Destructor
   ~CZIImage() {
-    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+    if (loglevel >= 5)
+      logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  BEGIN" << endl;
     closeImage();
-    // logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()" << endl;
+    if (loglevel >= 5)
+      logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()  END" << endl;
   };
 
   /// Overloaded functions for opening and closing a CZI image

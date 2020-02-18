@@ -41,6 +41,10 @@ double log2(double max){
 }
 #endif
 
+double log_scale(double max, int resolution_scale_factor){
+  return log((double)max)/log((double)resolution_scale_factor);
+}
+
 
 void DeepZoom::run( Session* session, const std::string& argument ){
 
@@ -77,6 +81,7 @@ void DeepZoom::run( Session* session, const std::string& argument ){
 
 
   unsigned int tw = (*session->image)->getTileWidth();
+  int res_scale_factor = (*session->image)->getResolutionScaleFactor();
   unsigned int numResolutions = (*session->image)->getNumResolutions();
 
 
@@ -85,7 +90,8 @@ void DeepZoom::run( Session* session, const std::string& argument ){
   unsigned int dzi_res;
   unsigned int max = width;
   if( height > width ) max = height;
-  dzi_res = (int) ceil( log2(max) );
+  //  dzi_res = (int) ceil( log2(max) );
+  dzi_res = (int) ceil( log_scale(max, res_scale_factor) );
 
   if( session->loglevel >= 4 ){
     *(session->logfile) << "DeepZoom :: required resolutions : " << dzi_res << ", real: " << numResolutions << endl;

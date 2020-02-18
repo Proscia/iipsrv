@@ -117,6 +117,9 @@ class IIPImage {
   /// The colour space of the image
   ColourSpaces colourspace;
 
+  /// The scale factor between successive resolutions
+  int resolution_scale_factor;
+
   /// The number of available resolutions in this image
   unsigned int numResolutions;
 
@@ -161,6 +164,7 @@ class IIPImage {
     tile_width( 0 ),
     tile_height( 0 ),
     colourspace( NONE ),
+	resolution_scale_factor( 2 ),
     numResolutions( 0 ),
     bpc( 0 ),
     channels( 0 ),
@@ -182,6 +186,7 @@ class IIPImage {
     tile_width( 0 ),
     tile_height( 0 ),
     colourspace( NONE ),
+	resolution_scale_factor( 2 ),
     numResolutions( 0 ),
     bpc( 0 ),
     channels( 0 ),
@@ -211,6 +216,7 @@ class IIPImage {
     tile_width( image.tile_width ),
     tile_height( image.tile_height ),
     colourspace( image.colourspace ),
+	resolution_scale_factor( image.resolution_scale_factor ),
     numResolutions( image.numResolutions ),
     bpc( image.bpc ),
     channels( image.channels ),
@@ -275,6 +281,9 @@ class IIPImage {
 
   /// Set the file name pattern used in image sequences
   void setFileNamePattern( const std::string& pattern ) { fileNamePattern = pattern; };
+
+  /// Return the scale factor between successive resolutions
+  int getResolutionScaleFactor() { return resolution_scale_factor; };
 
   /// Return the number of available resolutions in the image
   unsigned int getNumResolutions() { return numResolutions; };

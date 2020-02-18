@@ -281,7 +281,7 @@ scene#3:
           break;
         }
 
-		/*TEMP(Leo)*/// if (layer_statistics.layerInfo.minificationFactor != 2) { break; }
+        /*TEMP(Leo)*//* if (layer_statistics.layerInfo.minificationFactor != 2) { break; } */
 
         // Scaled down dimensions [rounded up with (.. -1)/scale +1]
         unsigned int w = (full_width -1)/scale +1;
@@ -299,6 +299,7 @@ scene#3:
         image_widths.push_back( w );
         image_heights.push_back( h );
         image_minification = layer_statistics.layerInfo.minificationFactor;
+        resolution_scale_factor = image_minification;
         image_scales.push_back( scale );
         ++numResolutions;
 
@@ -675,7 +676,7 @@ RawTile CZIImage::getSingleChannelPyramidLayerTile(
   scpta_options.Clear();
   //  scpta_options.sceneFilter = options.GetSceneIndexSet(); // Unused, leave as default from Clear().
   libCZI::RgbFloatColor bright_bkgd{ 1, 1, 1 /*0.9, 0.9, 0.9*/ };  // Light for brightfield images.
-  /*TEMP(for background debugging)  libCZI::RgbFloatColor bright_bkgd{ 1.0, 0.0, 0.0 };*/  // Light for brightfield images.
+  /*TEMP(for background debugging)  libCZI::RgbFloatColor bright_bkgd{ 0.7,0.1,0.7 };*/  // Light for brightfield images.
   libCZI::RgbFloatColor fluor_bkgd{ 0.0, 0.0, 0.0 };  // Black for fluorescence channels.
   scpta_options.backGroundColor = (channels_size == 1 ? bright_bkgd : fluor_bkgd);
   /*TEMP(for subblock debugging)  scpta_options.drawTileBorder = true;*/

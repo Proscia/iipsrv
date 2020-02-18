@@ -124,9 +124,11 @@ void IIIF::run( Session* session, const string& src )
   unsigned int height = (*session->image)->getImageHeight();
   unsigned tw = (*session->image)->getTileWidth();
   unsigned th = (*session->image)->getTileHeight();
+  int res_scale_factor = (*session->image)->getResolutionScaleFactor();
   unsigned numResolutions = (*session->image)->getNumResolutions();
 
   session->view->setImageSize( width, height );
+  session->view->setResolutionScaleFactor( res_scale_factor );
   session->view->setMaxResolutions( numResolutions );
 
   // PARSE INPUT PARAMETERS
@@ -188,7 +190,7 @@ void IIIF::run( Session* session, const string& src )
       // Only advertise images below our max size value
       if( (max == 0) || (w < max && h < max) ){
         infoStringStream << "," << endl
-        << "     { \"width\" : " << w << ", \"height\" : " << h << " }";
+                         << "     { \"width\" : " << w << ", \"height\" : " << h << " }";
       }
     }
 
@@ -197,8 +199,13 @@ void IIIF::run( Session* session, const string& src )
                      << "     { \"width\" : " << tw << ", \"height\" : " << th
                      << ", \"scaleFactors\" : [ 1"; // Scale 1 is original image
 
+    //    for ( unsigned int i = 1; i < numResolutions; i++ ){
+    //      infoStringStream << ", " << (1<<i);
+    //    }
+    int res_scale = 1;
     for ( unsigned int i = 1; i < numResolutions; i++ ){
-      infoStringStream << ", " << (1<<i);
+      res_scale *= res_scale_factor;
+      infoStringStream << ", " << res_scale;
     }
 
     infoStringStream << " ] }" << endl
@@ -208,8 +215,8 @@ void IIIF::run( Session* session, const string& src )
                      << "     { \"formats\" : [ \"jpg\", \"tiff\" ]," << endl
                      << "       \"qualities\" : [ \"native\",\"color\",\"gray\",\"bitonal\" ]," << endl
                      << "       \"supports\" : [\"regionByPct\",\"regionSquare\",\"sizeByForcedWh\",\"sizeByWh\",\"sizeAboveFull\",\"rotationBy90s\",\"mirroring\"]," << endl
-		     << "       \"maxWidth\" : " << max << "," << endl
-		     << "       \"maxHeight\" : " << max << "\n     }" << endl
+                     << "       \"maxWidth\" : " << max << "," << endl
+                     << "       \"maxHeight\" : " << max << "\n     }" << endl
                      << "  ]" << endl
                      << "}";
 
@@ -254,27 +261,27 @@ void IIIF::run( Session* session, const string& src )
 
       // Full export request
       if ( regionString == "full" ){
-	// Do nothing - region array already initialized
+        // Do nothing - region array already initialized
       }
       // Square region export using centered crop - avaialble in IIIF version 3
       else if (regionString == "square" ){
         if ( height > width ){
-	  region[0] = 0.0;
-	  region[2] = 1.0;
-	  region[3] = (float)width/(float)height;
-	  region[1] = (1.0-region[3])/2.0;
-	  session->view->setViewTop( region[1] );
-	  session->view->setViewHeight( region[3] );
+          region[0] = 0.0;
+          region[2] = 1.0;
+          region[3] = (float)width/(float)height;
+          region[1] = (1.0-region[3])/2.0;
+          session->view->setViewTop( region[1] );
+          session->view->setViewHeight( region[3] );
         }
-	else if ( width > height ){
-	  region[1] = 0.0;
-	  region[3] = 1.0;
-	  region[2] = (float)height/(float)width;
-	  region[0] = (1.0-region[2])/2.0;
-	  session->view->setViewLeft( region[0] );
-	  session->view->setViewWidth( region[2] );
+        else if ( width > height ){
+          region[1] = 0.0;
+          region[3] = 1.0;
+          region[2] = (float)height/(float)width;
+          region[0] = (1.0-region[2])/2.0;
+          session->view->setViewLeft( region[0] );
+          session->view->setViewWidth( region[2] );
         }
-	// No need for default else clause if image is already square
+        // No need for default else clause if image is already square
       }
 
       // Region export request
@@ -375,9 +382,9 @@ void IIIF::run( Session* session, const string& src )
         else if ( pos == 0 ){
           istringstream i( sizeString.substr( 1, string::npos ) );
           if ( !(i >> requested_height) ) throw invalid_argument( "invalid height" );
-	  requested_width = round( (float)requested_height * ratio );
-	  // Maintain aspect ratio in this case
- 	  session->view->maintain_aspect = true;
+          requested_width = round( (float)requested_height * ratio );
+          // Maintain aspect ratio in this case
+          session->view->maintain_aspect = true;
         }
 
         // If comma is not at the beginning, we must have a "width,height" or "width," request
@@ -385,9 +392,9 @@ void IIIF::run( Session* session, const string& src )
         else if ( pos == sizeString.length() - 1 ){
           istringstream i( sizeString.substr( 0, string::npos - 1 ) );
           if ( !(i >> requested_width ) ) throw invalid_argument( "invalid width" );
-	  requested_height = round( (float)requested_width / ratio );
-	  // Maintain aspect ratio in this case
- 	  session->view->maintain_aspect = true;
+          requested_height = round( (float)requested_width / ratio );
+          // Maintain aspect ratio in this case
+          session->view->maintain_aspect = true;
         }
 
         // Remaining case is "width,height"
@@ -407,14 +414,14 @@ void IIIF::run( Session* session, const string& src )
 
       // Limit our requested size to the maximum allowable size if necessary
       if( requested_width > max_size || requested_height > max_size ){
-	if( ratio > 1.0 ){
-	  requested_width = max_size;
-	  requested_height = session->view->maintain_aspect ? round(max_size*ratio) : max_size;
-	}
-	else{
-	  requested_height = max_size;
-	  requested_width = session->view->maintain_aspect ? round(max_size/ratio) : max_size;
-	}
+        if( ratio > 1.0 ){
+          requested_width = max_size;
+          requested_height = session->view->maintain_aspect ? round(max_size*ratio) : max_size;
+        }
+        else{
+          requested_height = max_size;
+          requested_width = session->view->maintain_aspect ? round(max_size/ratio) : max_size;
+        }
       }
 
       session->view->setRequestWidth( requested_width );
@@ -562,6 +569,27 @@ void IIIF::run( Session* session, const string& src )
   else{
     view_left = 0;
     view_top = 0;
+  }
+
+  if ( session->loglevel >= 4 ) {
+    *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+                        << "  session->view->maintain_aspect " << session->view->maintain_aspect
+                        << "  requested_res " << requested_res
+                        << endl;
+    *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+                        << "  tw " << tw
+                        << "  view_left " << view_left
+                        << "  requested_width " << requested_width
+                        << "  session->view->getViewWidth() " << session->view->getViewWidth()
+                        << "  im_width " << im_width
+                        << endl;
+    *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+                        << "  th " << th
+                        << "  view_top " << view_top
+                        << "  requested_height " << requested_height
+                        << "  session->view->getViewHeight() " << session->view->getViewHeight()
+                        << "  im_height " << im_height
+                        << endl;
   }
 
   // Determine whether this is a tile request which coincides with our tile boundaries

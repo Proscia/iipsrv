@@ -57,7 +57,7 @@ class CZIImage : public IIPImage {
 
   /// CZI info passed from CZIImage::loadImageInfo() to CZIImage::getTile().
   int channels_start;  // Use IIPImage::channels for channels_size.
-  int channels_size;  // CZI concept of channel size, which may not be same as IIPImage::channels.
+  int channels_size;   // CZI concept of channel size, which may not be same as IIPImage::channels.
   int z_layers_start;
   int z_layers_size;
   std::uint8_t image_minification;
@@ -115,10 +115,13 @@ class CZIImage : public IIPImage {
   CZIImage& operator = ( CZIImage image ) {
     if (loglevel >= 5)
       logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(CZIImage image)" << endl;
+
     if ( this != &image ) {
       if (loglevel >= 5)
         logfile << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "(this != image)" << endl;
+
       closeImage();
+
       IIPImage::operator=(image);
       czi_reader = image.czi_reader;
       tile_buf = image.tile_buf;

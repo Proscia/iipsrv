@@ -807,12 +807,11 @@ struct PixelGrader : PixelGraderBase {
   }
 };
 
-void GradeSingleChannel_Gray(shared_ptr<libCZI::IBitmapData>* dst_bitmap_ptr,
-                             const shared_ptr<libCZI::IBitmapData>& src_bitmap,
-                             const libCZI::Compositors::ChannelInfo& channelInfo,
-                             const libCZI::RgbFloatColor& background) {
-  shared_ptr<libCZI::IBitmapData>& dst_bitmap = *dst_bitmap_ptr;
-  dst_bitmap = GetSite()->CreateBitmap(src_bitmap->GetPixelType(), src_bitmap->GetWidth(), src_bitmap->GetHeight());
+shared_ptr<libCZI::IBitmapData> GradeSingleChannel_Gray(const shared_ptr<libCZI::IBitmapData>& src_bitmap,
+                                                        const libCZI::Compositors::ChannelInfo& channelInfo,
+                                                        const libCZI::RgbFloatColor& background) {
+  shared_ptr<libCZI::IBitmapData> dst_bitmap =
+    GetSite()->CreateBitmap(src_bitmap->GetPixelType(), src_bitmap->GetWidth(), src_bitmap->GetHeight());
 
   libCZI::ScopedBitmapLockerP locked_src{src_bitmap.get()};
   libCZI::ScopedBitmapLockerP locked_dst{dst_bitmap.get()};
@@ -837,7 +836,7 @@ void GradeSingleChannel_Gray(shared_ptr<libCZI::IBitmapData>* dst_bitmap_ptr,
                             dst_bitmap->GetPixelType(), locked_dst.ptrDataRoi, locked_dst.stride,
                             src_bitmap->GetWidth(), src_bitmap->GetHeight(), false);
 
-    return;
+    return dst_bitmap;
   }
 
 
@@ -863,7 +862,7 @@ void GradeSingleChannel_Gray(shared_ptr<libCZI::IBitmapData>* dst_bitmap_ptr,
     }
   }
 
-  return;
+  return dst_bitmap;
 }
 
 
@@ -969,11 +968,9 @@ RawTile CZIImage::getAllChannelsPyramidLayerTile(
     libCZI::Compositors::ChannelInfo single_channel_info = single_settings_helper.GetChannelInfosArray()[0];
     single_channel_info.enableTinting = false;  // Rather than tinting with { 255, 255, 255 }
 
-    shared_ptr<libCZI::IBitmapData> graded_bitmap;
-    GradeSingleChannel_Gray(&graded_bitmap,
-                            channel_bitmaps[ch],
-                            single_channel_info,
-                            scpta_options.backGroundColor);
+    shared_ptr<libCZI::IBitmapData> graded_bitmap = GradeSingleChannel_Gray(channel_bitmaps[ch],
+                                                                            single_channel_info,
+                                                                            scpta_options.backGroundColor);
     libCZI::ScopedBitmapLockerP locked_graded{graded_bitmap.get()};
 
     if (loglevel >= 2)

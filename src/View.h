@@ -41,6 +41,7 @@ class View{
   // Resolution independent x,y,w,h region viewport
   float view_left, view_top, view_width, view_height; /// viewport
 
+  int resolution_scale_factor;                /// Scale factor between resolutions
   int resolution;                             /// Requested resolution
   unsigned int max_resolutions;               /// Total available resolutions
   unsigned int width, height;                 /// Image width and height at full resolution
@@ -87,7 +88,7 @@ class View{
   /// Constructor
   View() {
     view_left = 0.0; view_top = 0.0; view_width = 1.0; view_height = 1.0;
-    resolution = 0; max_resolutions = 0;
+    resolution_scale_factor = 2; resolution = 0; max_resolutions = 0;
     width = 0; height = 0;
     res_width = 0; res_height = 0;
     min_size = 1; max_size = 0;
@@ -142,6 +143,16 @@ class View{
     if( cmapped || shaded || ctw.size() || colourspace==GREYSCALE ) return false;
     return embed_icc;
   };
+
+
+  /// Set the scale factor between successive resolutions
+  /** @param s resolution scale factor */
+  void setResolutionScaleFactor( int s ){ resolution_scale_factor = s; }
+
+
+  /// Get the scale factor between the max resolution and the current resolution.
+  /** @return requested current scale factor */
+  int getResolutionScale();
 
 
   /// Set the maximum view port dimension

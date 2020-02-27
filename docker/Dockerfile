@@ -38,9 +38,10 @@ RUN apt-get -y update && \
       rsyslog \
       spawn-fcgi \
       cmake \
-      wget \
+      wget && \
+    apt-get install -y \
       software-properties-common && \
-      apt-get -y build-dep openslide
+    apt-get -y build-dep openslide
 
 ARG NGINX_VERSION=1.15.1
 RUN cd /tmp && \
@@ -65,7 +66,8 @@ RUN cd /tmp && \
     make install && \
     ldconfig
 
-RUN cd /opt && git clone https://github.com/Leo311/libCZI.git && \
+RUN cd /opt && \
+    git clone https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/libCZI.git && \
     cd libCZI && \
     cmake -G "Unix Makefiles" && \
     make && \
@@ -77,9 +79,12 @@ RUN cd /opt && git clone https://github.com/Leo311/libCZI.git && \
         && [ -x Src/CZICmd/CZIcmd ]
 
 #IIP Image Server
-RUN cd /opt && git clone https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/iipsrv.git
-RUN cd /opt/iipsrv && git checkout optimize-plus-docker
-RUN cd /opt/iipsrv && sh autogen.sh && \
+RUN cd /opt && \
+    git clone https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/iipsrv.git
+RUN cd /opt/iipsrv && \
+    git checkout optimize-plus-docker
+RUN cd /opt/iipsrv && \
+    sh autogen.sh && \
     ./configure && \
     make
 

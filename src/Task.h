@@ -47,23 +47,18 @@
 #define MAX_AGE 86400
 
 
-#if 1  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
-typedef HASHMAP <std::string,std::shared_ptr<IIPImage>> imageCacheMapType;
-
-#else  // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
 #ifdef HAVE_EXT_POOL_ALLOCATOR
 #include <ext/pool_allocator.h>
-typedef HASHMAP < std::string, IIPImage,
+typedef HASHMAP < std::string, std::shared_ptr<IIPImage>,
 			      __gnu_cxx::hash< const std::string >,
 			      std::equal_to< const std::string >,
-			      __gnu_cxx::__pool_alloc< std::pair<const std::string,IIPImage> >
+			      __gnu_cxx::__pool_alloc< std::pair<const std::string,std::shared_ptr<IIPImage>> >
 			      > imageCacheMapType;
 #else
-typedef HASHMAP <std::string,IIPImage> imageCacheMapType;
+typedef HASHMAP <std::string,std::shared_ptr<IIPImage>> imageCacheMapType;
 #endif
 
-#endif // TODO(Leo) If used, clean-up this declaration and #ifdef-s.
 
 
 

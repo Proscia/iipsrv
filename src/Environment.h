@@ -26,7 +26,6 @@
 /* Define some default values
  */
 #define VERBOSITY 1
-#define VERBOSITY 5  // TODO(LEO) Remove when done with it.
 #define LOGFILE "/tmp/iipsrv.log"
 #define MAX_IMAGE_CACHE_SIZE 10.0
 #define FILENAME_PATTERN "_pyr_"

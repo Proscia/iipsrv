@@ -14,9 +14,13 @@
 # limitations under the License.
 #
 
-ARG FROM_NAMESPACE
-ARG FROM_VERSION
-FROM ${FROM_NAMESPACE}/base:$FROM_VERSION
+FROM ubuntu:18.04
+
+SHELL ["/bin/bash", "-c"]
+
+RUN sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
+
+RUN cat /etc/apt/sources.list
 
 RUN apt-get -y update && \
     apt-get install -y \
@@ -33,9 +37,10 @@ RUN apt-get -y update && \
       libtool \
       rsyslog \
       spawn-fcgi \
+      cmake \
+      wget \
       software-properties-common && \
-      apt-get -y build-dep openslide && \
-    rm -rf /var/lib/apt/lists/*
+      apt-get -y build-dep openslide
 
 ARG NGINX_VERSION=1.15.1
 RUN cd /tmp && \
@@ -60,13 +65,21 @@ RUN cd /tmp && \
     make install && \
     ldconfig
 
+RUN cd /opt && git clone https://github.com/Leo311/libCZI.git && \
+    cd libCZI && \
+    cmake -G "Unix Makefiles" && \
+    make && \
+    shopt -s globstar && \
+    ls -l **/*.{a,so} **/CZIcmd && \
+    [ -f Src/libCZI/liblibCZI.so ] \
+        && [ -f Src/libCZI/liblibCZIStatic.a ] \
+        && [ -f Src/JxrDecode/libJxrDecodeStatic.a ] \
+        && [ -x Src/CZICmd/CZIcmd ]
+
 #IIP Image Server
-ARG VERSION
-ARG NAMESPACE=Cytomine-ULiege
-ARG RELEASE_PATH=https://github.com/${NAMESPACE}/iipsrv/archive
-ADD ${RELEASE_PATH}/v${VERSION}.tar.gz /opt/iipsrv
-RUN cd /opt/iipsrv && \
-    sh autogen.sh && \
+RUN cd /opt && git clone https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/iipsrv.git
+RUN cd /opt/iipsrv && git checkout optimize-plus-docker
+RUN cd /opt/iipsrv && sh autogen.sh && \
     ./configure && \
     make
 

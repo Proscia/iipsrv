@@ -100,17 +100,32 @@ void FIF::run( Session* session, const string& src ){
   try{
     // Cache Hit
     if( session->imageCache->find(argument) != session->imageCache->end() ){
-      *session->image = (*session->imageCache)[ argument ].get();
-      timestamp = (*session->image)->timestamp;       // Record timestamp if we have a cached image
-
       if( session->loglevel >= 2 ){
-        *(session->logfile) << "FIF :: Image cache hit. Number of elements: " << session->imageCache->size() << endl;
+        *(session->logfile) << "FIF :: Image cache hit: " << argument
+                            << ", Number of elements: " << session->imageCache->size() << endl;
       }
 
+      *session->image = (*session->imageCache)[ argument ].get();
+      timestamp = (*session->image)->timestamp;  // Timestamp of cached image.
+
+      // Update timestamp from underlying file.
+      (*session->image)->updateTimestamp();
+ 
+      // Check timestamp consistency. If cached timestamp is older, update cached image and metadata.
+      if( timestamp < (*session->image)->timestamp ){
+        if( session->loglevel >= 2 ){
+          *(session->logfile) << "FIF :: Image timestamp changed to: " <<  (*session->image)->getTimestamp()
+                              << ", reloading image and metadata" << endl;
+        }
+
+        (*session->image)->closeImage();
+        (*session->image)->openImage();
+        (*session->image)->loadImageInfo( (*session->image)->currentX, (*session->image)->currentY );
+      }
     }
     // Cache Empty or Miss
     else{
-      if( session->imageCache->empty() ){
+      if( session->imageCache->empty() ) {
         if( session->loglevel >= 1 ) *(session->logfile) << "FIF :: Image cache initialization" << endl;
       }
       else {
@@ -118,6 +133,7 @@ void FIF::run( Session* session, const string& src ){
         // Delete items if our list of images is too long.
         if( session->imageCache->size() >= MAXIMAGECACHE ) session->imageCache->erase( session->imageCache->begin() );
       }
+
       test = IIPImage( argument );
       test.setFileNamePattern( filename_pattern );
       test.setFileSystemPrefix( filesystem_prefix );
@@ -207,22 +223,16 @@ void FIF::run( Session* session, const string& src ){
       (*session->imageCache)[argument] = std::shared_ptr<IIPImage>(*session->image);
     }
 
-    if( session->loglevel >= 2 )
-      *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
-                          << ",  (*session->imageCache)[argument].use_count() " << (*session->imageCache)[argument].use_count()
-                          << endl;
-
-    // Check timestamp consistency. If cached timestamp is older, update metadata
-    if( timestamp>0 && (timestamp < (*session->image)->timestamp) ){
-      if( session->loglevel >= 2 ){
-        *(session->logfile) << "FIF :: Image timestamp changed: reloading metadata" << endl;
-      }
-      (*session->image)->loadImageInfo( (*session->image)->currentX, (*session->image)->currentY );
-    }
-
     if( session->loglevel >= 3 ){
       *(session->logfile) << "FIF :: Created image" << endl;
     }
+
+    if( session->loglevel >= 2 )
+      *(session->logfile) << __FILE__ << ": " << __LINE__ << "  " << __FUNCTION__ << "()"
+                          << ",  (*session->imageCache)[argument].use_count() "
+                          << (*session->imageCache)[argument].use_count()
+                          << endl;
+
 
     // Set the timestamp for the reply
     session->response->setLastModified( (*session->image)->getTimestamp() );

@@ -1,11 +1,15 @@
+#!/bin/bash
+
 export VERBOSITY=10
 export LOGFILE=/tmp/iip.out
-. /tmp/iip-configuration.sh
 
-PORT=9000
+PORT=7000
 COUNTER=0
+echo $NB_IIP_PROCESS
 while [[ $COUNTER -lt $NB_IIP_PROCESS ]]; do
     echo "spawn process"
-    spawn-fcgi -f /opt/iipsrv/src/iipsrv.fcgi -a 127.0.0.1 -p $(($PORT+$COUNTER))
+    spawn-fcgi -f /opt/iipsrv/src/iipsrv.fcgi -p $(($PORT+$COUNTER))
     let COUNTER=COUNTER+1
 done
+
+tail -f /tmp/iip.out

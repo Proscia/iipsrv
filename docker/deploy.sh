@@ -26,21 +26,7 @@ echo "  create 640 root root"           >> /etc/logrotate.d/iip
 echo "  su root root"                   >> /etc/logrotate.d/iip
 echo "}"                                >> /etc/logrotate.d/iip
 
-. /tmp/iip-configuration.sh
 sysctl -w net.core.somaxconn=2048
-
-
-# Configure Nginx
-PORT=9000
-COUNTER=0
-while [[ $COUNTER -lt $NB_IIP_PROCESS ]]; do
-    sed -i "s/IIP_PROCESS/        	server 127.0.0.1:$(($PORT+$COUNTER)); \nIIP_PROCESS/g" /tmp/nginx.conf.sample
-    let COUNTER=COUNTER+1
-done
-sed -i "s/IIP_PROCESS//g" /tmp/nginx.conf.sample
-mv /tmp/nginx.conf.sample /usr/local/nginx/conf/nginx.conf
-echo "start nginx"
-/usr/local/nginx/sbin/nginx &
 
 /tmp/start-iip.sh
 

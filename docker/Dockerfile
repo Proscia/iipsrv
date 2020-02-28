@@ -18,11 +18,14 @@ FROM ubuntu:18.04
 
 SHELL ["/bin/bash", "-c"]
 
-RUN sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
+ARG QUIET="perl -ne '\$|=1; print (++\$n%80==1 ? \"\\n\$_\" : \".\");'"
 
-RUN cat /etc/apt/sources.list
+RUN echo "QUIET: $QUIET" && \
+    sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list && \
+    cat /etc/apt/sources.list
 
-RUN apt-get -y update && \
+RUN apt-get update -y \
+      | eval "$QUIET" && \
     apt-get install -y \
       cron \
       git \
@@ -38,10 +41,14 @@ RUN apt-get -y update && \
       rsyslog \
       spawn-fcgi \
       cmake \
-      wget && \
+      wget \
+      | eval "$QUIET" && \
     apt-get install -y \
-      software-properties-common && \
-    apt-get -y build-dep openslide
+      software-properties-common \
+      | eval "$QUIET" && \
+    apt-get build-dep -y openslide \
+      | eval "$QUIET"
+
 
 ARG NGINX_VERSION=1.15.1
 RUN cd /tmp && \
@@ -53,6 +60,7 @@ RUN cd /tmp && \
     make && \
     make install && \
     rm -rf /tmp/*
+
 
 # openslide
 ARG OPENSLIDE_VERSION=3.4.1
@@ -66,27 +74,37 @@ RUN cd /tmp && \
     make install && \
     ldconfig
 
-RUN cd /opt && \
-    git clone https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/libCZI.git && \
-    cd libCZI && \
+
+# Zeiss CZI
+ARG LIBCZI_REPOSITORY_URL=https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/libCZI.git
+ARG LIBCZI_BRANCH=master
+
+RUN cd /opt && git clone ${LIBCZI_REPOSITORY_URL} && \
+    cd /opt/libCZI && git checkout ${LIBCZI_BRANCH} && git branch
+
+RUN cd /opt/libCZI && \
     cmake -G "Unix Makefiles" && \
     make && \
-    shopt -s globstar && \
-    ls -l **/*.{a,so} **/CZIcmd && \
+    shopt -s globstar && ls -l **/*.{a,so} **/CZIcmd && \
     [ -f Src/libCZI/liblibCZI.so ] \
         && [ -f Src/libCZI/liblibCZIStatic.a ] \
         && [ -f Src/JxrDecode/libJxrDecodeStatic.a ] \
         && [ -x Src/CZICmd/CZIcmd ]
 
-#IIP Image Server
-RUN cd /opt && \
-    git clone https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/iipsrv.git
-RUN cd /opt/iipsrv && \
-    git checkout optimize-plus-docker
+
+# IIP Image Server
+ARG IIPSRV_REPOSITORY_URL=https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/iipsrv.git
+ARG IIPSRV_BRANCH=optimize-plus-docker
+
+RUN cd /opt && git clone ${IIPSRV_REPOSITORY_URL} && \
+    cd /opt/iipsrv && git checkout ${IIPSRV_BRANCH} && git branch
+
 RUN cd /opt/iipsrv && \
     sh autogen.sh && \
     ./configure && \
-    make
+    make && \
+    shopt -s globstar && ls -l **/*.fcgi
+
 
 COPY deploy.sh /tmp/deploy.sh
 RUN chmod +x /tmp/deploy.sh

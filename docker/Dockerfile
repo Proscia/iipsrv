@@ -50,18 +50,6 @@ RUN apt-get update -y \
       | eval "$QUIET"
 
 
-ARG NGINX_VERSION=1.15.1
-RUN cd /tmp && \
-    wget https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz && \
-    tar -zxvf nginx-$NGINX_VERSION.tar.gz && \
-    rm nginx-$NGINX_VERSION.tar.gz && \
-    cd /tmp/nginx-$NGINX_VERSION && \
-    ./configure && \
-    make && \
-    make install && \
-    rm -rf /tmp/*
-
-
 # openslide
 ARG OPENSLIDE_VERSION=3.4.1
 RUN cd /tmp && \

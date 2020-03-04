@@ -58,7 +58,7 @@ RUN cd /tmp && \
     cd ./openslide-${OPENSLIDE_VERSION} && \
     autoreconf -i && \
     ./configure && \
-    make && \
+    make -j$(nproc) && \
     make install && \
     ldconfig
 

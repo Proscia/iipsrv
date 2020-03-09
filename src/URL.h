@@ -119,7 +119,7 @@ inline std::string URL::decode()
 inline std::string URL::escape()
 {
   std::string json;
-  std::string input = this->decode();
+  std::string input = url;
 
   for( unsigned int i=0; i<input.length(); i++ ){
     char c = input[i];

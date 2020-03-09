@@ -234,7 +234,7 @@ void IIIF::run( Session* session, const string& src )
     if ( !cors.empty() ) header << cors << eof;
     header << eof << infoStringStream.str();
 
-    session->out->printf( (const char*) header.str().c_str() );
+    session->out->putS( (const char*) header.str().c_str() );
     session->response->setImageSent();
 
     return;

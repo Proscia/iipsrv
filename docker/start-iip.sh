@@ -11,5 +11,3 @@ while [[ $COUNTER -lt $NB_IIP_PROCESS ]]; do
     spawn-fcgi -f /opt/iipsrv/src/iipsrv.fcgi -p $(($PORT+$COUNTER))
     let COUNTER=COUNTER+1
 done
-
-tail -f /tmp/iip.out

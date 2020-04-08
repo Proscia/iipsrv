@@ -53,16 +53,7 @@ void IIIF::run( Session* session, const string& src )
   // Various string variables
   string suffix, filename, params;
 
-  // First filter and decode our URL
-  URL url( src );
-  string argument = url.decode();
-
-  if ( session->loglevel >= 1 ){
-    if ( url.warning().length() > 0 ) *(session->logfile) << "IIIF :: " << url.warning() << endl;
-    if ( session->loglevel >= 5 ){
-      *(session->logfile) << "IIIF :: URL decoded to " << argument << endl;
-    }
-  }
+  string argument = src;
 
   // Check if there is slash in argument and if it is not last / first character, extract identifier and suffix
   size_t lastSlashPos = argument.find_last_of("/");

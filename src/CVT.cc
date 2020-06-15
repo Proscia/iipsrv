@@ -183,7 +183,7 @@ void CVT::send( Session* session ){
 	    (*session->image)->getTimestamp().c_str(),
 	    compressor->getMimeType(), basename.c_str(), compressor->getSuffix() );
 
-  session->out->printf( (const char*) str );
+  session->out->putS( (const char*) str );
 #endif
 
 

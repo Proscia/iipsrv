@@ -53,9 +53,8 @@ RUN apt-get update -y \
 # openslide
 ARG OPENSLIDE_VERSION=3.4.1
 RUN cd /tmp && \
-    wget https://github.com/openslide/openslide/releases/download/v${OPENSLIDE_VERSION}/openslide-${OPENSLIDE_VERSION}.tar.gz && \
-    tar -zxvf ./openslide-${OPENSLIDE_VERSION}.tar.gz && \
-    cd ./openslide-${OPENSLIDE_VERSION} && \
+    git clone https://github.com/Proscia/openslide.git && \
+    cd ./openslide && \
     autoreconf -i && \
     ./configure && \
     make -j$(nproc) && \

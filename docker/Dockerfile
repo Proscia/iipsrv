@@ -81,7 +81,7 @@ RUN cd /opt/libCZI && \
 
 # IIP Image Server
 ARG IIPSRV_REPOSITORY_URL=https://5af320861a6c1ff842a80918fc4e846b8ffa0fae:x-oauth-basic@github.com/Proscia/iipsrv.git
-ARG IIPSRV_BRANCH=optimize-plus-docker
+ARG IIPSRV_BRANCH=main-proscia-iipsrv
 
 RUN cd /opt && git clone ${IIPSRV_REPOSITORY_URL} && \
     cd /opt/iipsrv && git checkout ${IIPSRV_BRANCH} && git remote -v && git branch

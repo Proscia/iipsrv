@@ -1,5 +1,7 @@
 version: 2.1
 jobs:
+
+  # Build and push the iipsrv Docker image.
   docker-build:
     machine:
       image: ubuntu-1604:201903-01
@@ -55,6 +57,7 @@ jobs:
 
 
 
+  # A test workflow demonstrating the development host build of iipsrv.
   host-build:
     machine:
       image: ubuntu-1604:201903-01
@@ -113,6 +116,7 @@ jobs:
 workflows:
   version: 2
 
+  # Build and push the iipsrv Docker image.
   docker_workflow:
     jobs:
       - docker-build:
@@ -120,11 +124,9 @@ workflows:
           filters:
             branches:
               only:
-                - master-circleci
-                - zeiss-circleci
-                - optimize-plus-docker
-                - zeiss-docker
+                - main-proscia-iipsrv
 
+  # A test workflow demonstrating the development host build of iipsrv.
   host_workflow:
     jobs:
       - host-build:

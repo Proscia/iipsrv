@@ -156,8 +156,8 @@ void FIF::run( Session* session, const string& src ){
         *session->image = new OpenSlideImage( test );
       }
 #endif
-      else if ( format == QPTIFF ) {
-        if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: QPTIFF image detected" << endl;
+      else if ( format == QPTIFF || format == FUSED_TIFF ) {
+        if( session->loglevel >= 2 ) *(session->logfile) << "FIF :: QPTIFF or FUSED_TIFF image detected" << endl;
         *session->image = new QPTIFFImage( test );
       }
       else if ( format == CZI ) {

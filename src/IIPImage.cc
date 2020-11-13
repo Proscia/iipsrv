@@ -45,7 +45,8 @@
 
 using namespace std;
 
-
+extern int loglevel;
+extern std::ofstream logfile;
 
 // Swap function
 void IIPImage::swap( IIPImage& first, IIPImage& second ) // nothrow
@@ -145,26 +146,42 @@ void IIPImage::testImageType()
       static const unsigned char bbigtiff[4] = {0x49,0x49,0x2B,0x00}; // Big Endian BigTIFF
 
       // Compare our header sequence to our magic byte signatures
-      if( memcmp( header, j2k, 10 ) == 0 ) format = JPEG2000;
+      if( memcmp( header, j2k, 10 ) == 0 ) {
+        format = JPEG2000;
+      }
       else if( memcmp( header, stdtiff, 3 ) == 0
                || memcmp( header, lsbtiff, 4 ) == 0 || memcmp( header, msbtiff, 4 ) == 0
                || memcmp( header, lbigtiff, 4 ) == 0 || memcmp( header, bbigtiff, 4 ) == 0 ){
+        // Read Tiff Tags to distinguish between specialized Tiff formats.
         TIFF *test = TIFFOpen(pstr, "rm");
         if( test == NULL ){
           string message = "Unable to open file '" + path + "'";
           throw file_error( message );
         }
         char *software_tag;
+        uint16 compression;
         TIFFGetField(test, TIFFTAG_SOFTWARE, &software_tag);
+        TIFFGetField(test, TIFFTAG_COMPRESSION, &compression);
+        logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "software_tag: " << software_tag
+                << ", compression = " << compression << endl;
+
         if ( string(software_tag).rfind("PerkinElmer-QPI", 0) == 0 ) {
           format = QPTIFF;
+        }
+        else if ( string(software_tag).rfind("IndicaLabsImageWriter", 0) == 0
+                  && compression == COMPRESSION_ADOBE_DEFLATE) {
+          // Halo created Fused Tiff
+          format = FUSED_TIFF;
         }
         else {
           format = TIF;
         }
         TIFFClose(test);
       }
-      else format = UNSUPPORTED;
+      else {
+        format = UNSUPPORTED;
+      }
     }
   }
   else{

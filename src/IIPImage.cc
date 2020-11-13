@@ -45,6 +45,7 @@
 
 using namespace std;
 
+#include <fstream>  // operator<<(), __FILE__,...
 extern int loglevel;
 extern std::ofstream logfile;
 

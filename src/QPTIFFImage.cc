@@ -26,6 +26,7 @@
 #include <iostream>
 #include <fstream>
 
+extern int loglevel;
 extern std::ofstream logfile;
 
 using namespace std;
@@ -66,7 +67,7 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
 {
   tdir_t current_dir;
   int count;
-  uint16 colour, samplesperpixel, bitspersample, sampleformat;
+  uint16 colour, samplesperpixel, bitspersample, sampleformat, compression;
   double sminvaluearr[4] = {0.0}, smaxvaluearr[4] = {0.0};
   double *sminvalue = NULL, *smaxvalue = NULL;
   unsigned int w, h;
@@ -77,6 +78,7 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
   currentY = ang;
 
   // Get the tile and image sizes
+  // Ref:  http://www.libtiff.org/man/TIFFSetField.3t.html
   TIFFGetField( tiff, TIFFTAG_TILEWIDTH, &tile_width );
   TIFFGetField( tiff, TIFFTAG_TILELENGTH, &tile_height );
   TIFFGetField( tiff, TIFFTAG_IMAGEWIDTH, &w );
@@ -85,8 +87,11 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
   TIFFGetField( tiff, TIFFTAG_BITSPERSAMPLE, &bitspersample );
   TIFFGetField( tiff, TIFFTAG_PHOTOMETRIC, &colour );
   TIFFGetField( tiff, TIFFTAG_SAMPLEFORMAT, &sampleformat );
+  TIFFGetField( tiff, TIFFTAG_COMPRESSION, &compression );
 
   if ( samplesperpixel == 1 ){
+    // Fluorescence QPTIFF and FUSED_TIFF have N channel directories per resolution.
+    // For QPTIFF the N+1st directory is the thumbnail.
     channels = 0;
 
     unsigned int w1 = w, h1 = h;
@@ -95,17 +100,28 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
       TIFFGetField( tiff, TIFFTAG_IMAGEWIDTH, &w1 );
       TIFFGetField( tiff, TIFFTAG_IMAGELENGTH, &h1 );
       channels++;
-      logfile << "QPTIFFImage:: " << "Dir w " << w1 << " Chan " << channels << endl;
+      if (loglevel >= 2)
+        logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "Dir w, h " << w1 << ", " << h1 << "; Chan " << channels << endl;
     }
   }
   else {
+    // Brightfield QPTIFF have one 3-channel RGB directory per resolution.
+    TIFFReadDirectory( tiff );  // For QPTIFF, read the thumbnail.
     channels = 3;
   }
 
-  logfile << "QPTIFFImage:: " << "Channels: " << channels << endl;
+  if (loglevel >= 2)
+    logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+			<< "TIFFCurrentDirectory " << TIFFCurrentDirectory( tiff )
+            << ", Channels: " << channels
+            << ", sampleformat = " << sampleformat
+            << ", compression = " << compression
+            << endl;
 
   bpc = (unsigned int) bitspersample;
-  sampleType = (sampleformat==3) ? FLOATINGPOINT : FIXEDPOINT;
+  sampleType = (sampleformat == SAMPLEFORMAT_IEEEFP || compression == COMPRESSION_ADOBE_DEFLATE)
+    ? FLOATINGPOINT : FIXEDPOINT;
 
   // // Check for the no. of resolutions in the pyramidal image
   // current_dir = TIFFCurrentDirectory( tiff );
@@ -115,7 +131,20 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
   image_widths.push_back( w );
   image_heights.push_back( h );
 
+  if (format != QPTIFF) {
+    // For non-QPTIFF (e.g., FUSED_TIFF), there was no thumbnail directory, so backup one.
+    tdir_t backup_dir;
+    backup_dir = TIFFCurrentDirectory( tiff );
+    if (backup_dir > 0) --backup_dir;
+    TIFFSetDirectory( tiff, backup_dir );
+  }
+
   for( count = 0; TIFFReadDirectory( tiff ); count++ ){
+	if (loglevel >= 9)
+	  logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+			  << "TIFFCurrentDirectory " << TIFFCurrentDirectory( tiff )
+			  << endl;
+
     TIFFGetField( tiff, TIFFTAG_IMAGEWIDTH, &w );
     TIFFGetField( tiff, TIFFTAG_IMAGELENGTH, &h );
     // ignore downsamples smaller than 2K x 2K
@@ -124,9 +153,13 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
     }
     image_widths.push_back( w );
     image_heights.push_back( h );
+
+	// Move to the last directory of the current channel.
     current_dir = TIFFCurrentDirectory( tiff );
-    TIFFSetDirectory( tiff, current_dir + channels );
-    logfile << "QPTIFFImage:: " << "Channels: " << count << " w " << w << endl;
+    TIFFSetDirectory( tiff, current_dir + (channels - 1) );
+    if (loglevel >= 2)
+      logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+              << "Channels: " << count << " w, h " << w << ", " << h << endl;
   }
   // Reset the TIFF directory
   TIFFSetDirectory( tiff, current_dir );
@@ -134,7 +167,9 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
   numResolutions = count+1;
 
   // Handle various colour spaces
-  if( colour == PHOTOMETRIC_CIELAB ) colourspace = CIELAB;
+  if( colour == PHOTOMETRIC_CIELAB ) {
+    colourspace = CIELAB;
+  }
   else if( colour == PHOTOMETRIC_MINISBLACK ){
     colourspace = (bpc==1)? BINARY : GREYSCALE;
   }
@@ -149,7 +184,13 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
     TIFFSetField( tiff, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB );
     colourspace = sRGB;
   }
-  else colourspace = sRGB;
+  else if( colour == PHOTOMETRIC_RGB ){
+    // RGB stored as a single channel.
+    colourspace = sRGB;
+  }
+  else {
+    colourspace = sRGB;
+  }
 
   // Get the max and min values for our data type - required for floats
   // This are usually single values per image, but can also be per channel
@@ -223,7 +264,9 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
   string filename;
 
 
-  logfile << "QPTIFFIMAGE:: getTile begin" << endl;
+  if (loglevel >= 2)
+    logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+            << "getTile begin" << endl;
 
   // Check the resolution exists
   if( res > numResolutions ){
@@ -260,13 +303,17 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
   //  the smallest image first.
   int vipsres = ( numResolutions - 1 ) - res;
 
-  // because we have N directories per resolution and because the N+1th directory is the thumbnail
+  // Brightfield QPTIFF have one 3-channel RGB directory per resolution.
+  // Fluorescence QPTIFF and FUSED_TIFF have N channel directories per resolution.
+  // For QPTIFF the N+1st directory is the thumbnail.
   int tiff_dir = vipsres * channels;
-  if ( tiff_dir > 0 ) {
+  if ( tiff_dir > 0  && format == QPTIFF) {
     tiff_dir += 1;
   }
 
-  logfile << "QPTIFFIMAGE:: tiff_dir = " << tiff_dir << " bpc = " << bpc << endl;
+  if (loglevel >= 2)
+    logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "tiff_dir = " << tiff_dir << ", bpc = " << bpc << endl;
 
   // Change to the right directory for the resolution
   if( !TIFFSetDirectory( tiff, tiff_dir ) ) {
@@ -301,7 +348,7 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
   }
 
 
-  // Total number of bytes in tile
+  // Total number of pixels in tile
   unsigned int np = tw * th;
 
 
@@ -328,34 +375,55 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
 
 
   // Handle various colour spaces
-  if( colour == PHOTOMETRIC_CIELAB ) colourspace = CIELAB;
+  if( colour == PHOTOMETRIC_CIELAB ) {
+    colourspace = CIELAB;
+  }
   else if( colour == PHOTOMETRIC_MINISBLACK ){
     colourspace = (bpc==1)? BINARY : GREYSCALE;
   }
   else if( colour == PHOTOMETRIC_PALETTE ){
-    // Watch out for colourmapped images. There are stored as 1 sample per pixel,
+    // Watch out for colourmapped images. These are stored as 1 sample per pixel,
     // but are decoded to 3 channels by libtiff, so declare them as sRGB
-    colourspace = GREYSCALE;
-    channels = 1;
+    colourspace = sRGB;
+    channels = 3;
   }
   else if( colour == PHOTOMETRIC_YCBCR ){
     // JPEG encoded tiles can be subsampled YCbCr encoded. Ask to decode these to RGB
     TIFFSetField( tiff, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB );
     colourspace = sRGB;
   }
-  else colourspace = sRGB;
+  else if( colour == PHOTOMETRIC_RGB ){
+    // RGB stored as a single channel.
+    colourspace = sRGB;
+  }
+  else {
+    colourspace = sRGB;
+  }
 
-  logfile << "QPTIFFImage:: TIFFTileSize = " << TIFFTileSize(tiff) << endl;
   tsize_t tile_size = TIFFTileSize(tiff);
+  if (loglevel >= 2)
+    logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+            << "TIFFTileSize = " << tile_size << endl;
 
   tdata_t *channels_tile_bufs = new tdata_t[channels];
   for ( int i = 0; i < channels; i++ ) {
+    if (loglevel >= 9)
+      logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+              << "i = " << i << " (of " << channels << ")" << endl;
+
     if( ( channels_tile_bufs[i] = _TIFFmalloc ( tile_size ) ) == NULL ) {
       throw file_error( "tiff malloc tile failed" );
     }
+
+    // Decode and read the tile
     int length = TIFFReadEncodedTile( tiff, (ttile_t) tile,
             channels_tile_bufs[i], (tsize_t) - 1 );
     if( length == -1 ) {
+      if (loglevel >= 2)
+        logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "TIFFReadEncodedTile failed for channel i = " << i
+                << " (of " << channels << ")" << endl;
+
       throw file_error( "TIFFReadEncodedTile failed for " + getFileName( seq, ang ) );
     }
     TIFFReadDirectory( tiff );
@@ -363,20 +431,19 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
 
   // Allocate memory for our tile.
   if( !tile_buf ){
-    logfile << "QPTIFFIMAGE:: tile_buf size = " << tile_size * channels << endl;
+    if (loglevel >= 2)
+      logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+              << "tile_buf size = " << tile_size * channels << endl;
+
     if( ( tile_buf = _TIFFmalloc( tile_size * channels ) ) == NULL ){
       throw file_error( "tiff malloc tile failed" );
     }
   }
 
-  logfile << "QPTIFFIMAGE:: tiles read into channels_tile_bufs" << endl;
-
-  // Decode and read the tile
-  // int length = TIFFReadEncodedTile( tiff, (ttile_t) tile,
-		// 		    tile_buf, (tsize_t) - 1 );
-  // if( length == -1 ) {
-  //   throw file_error( "TIFFReadEncodedTile failed for " + getFileName( seq, ang ) );
-  // }
+  if (loglevel >= 2)
+    logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+            << "read tiles into channels_tile_bufs"
+            << ", bpc = " << bpc << endl;
 
   for ( int i = 0; i < np; i++ ){
     for ( int c = 0; c < channels; c++ ){
@@ -401,8 +468,6 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
     _TIFFfree(channels_tile_bufs[i]);
   }
   delete channels_tile_bufs;
-
-  logfile << " QPTIFFImage:: bpc = " << bpc << endl;
 
   RawTile rawtile( tile, res, seq, ang, tw, th, channels, bpc );
   rawtile.data = tile_buf;
@@ -437,8 +502,8 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
       unsigned char t = ((unsigned char*)tile_buf)[i];
       // Count backwards as TIFF is usually MSB2LSB
       for( int k=7; k>=0; k-- ){
-	// Set values depending on whether bit is set
-	buffer[n++] = (t & (1 << k)) ? max : min;
+        // Set values depending on whether bit is set
+        buffer[n++] = (t & (1 << k)) ? max : min;
       }
     }
 

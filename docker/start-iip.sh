@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export VERBOSITY=10
+export VERBOSITY=${VERBOSITY:-2}
 export LOGFILE=/tmp/iip.out
 
 PORT=7000

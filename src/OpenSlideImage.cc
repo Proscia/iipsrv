@@ -3,7 +3,7 @@
 #include <cmath>
 #include <sstream>
 
-#define DEBUG true
+//#define DEBUG true
 using namespace std;
 
 #ifdef DEBUG
@@ -85,7 +85,6 @@ void OpenSlideImage::loadImageInfo( int x, int y ) throw( file_error ) {
 #ifdef DEBUG
   logfile << "dimensions :" << w << " x " << h << endl;
   logfile << "vendor : " << vendor << endl;
-  logfile << "boundsW : " << w << endl;
 #endif
 
   image_widths.clear();

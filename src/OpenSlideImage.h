@@ -30,6 +30,9 @@ private:
   /// OpenSlide reader
   openslide_t *osr;
 
+  /// Bounds properties for MIRAX images
+  int boundsX, boundsY;
+
   void read( int zoom, long w, long h, long x, long y, void *data );
   void downsample_region( openslide_t *osr, unsigned int *buf, long int x, long int y, int z, long int w, long int h );
 

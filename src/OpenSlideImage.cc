@@ -67,10 +67,25 @@ void OpenSlideImage::loadImageInfo( int x, int y ) throw( file_error ) {
   bpc = 8;
   colourspace = sRGB;
   vendor = openslide_get_property_value( osr, OPENSLIDE_PROPERTY_NAME_VENDOR );
+  boundsX = 0;
+  boundsY = 0;
+
+  const char *boundsWidthStr = openslide_get_property_value( osr, OPENSLIDE_PROPERTY_NAME_BOUNDS_WIDTH );
+  const char *boundsHeightStr = openslide_get_property_value( osr, OPENSLIDE_PROPERTY_NAME_BOUNDS_HEIGHT );
+  const char *boundsXStr = openslide_get_property_value( osr, OPENSLIDE_PROPERTY_NAME_BOUNDS_X );
+  const char *boundsYStr = openslide_get_property_value( osr, OPENSLIDE_PROPERTY_NAME_BOUNDS_Y );
+
+  if ( boundsWidthStr && boundsHeightStr && boundsXStr && boundsYStr ) {
+    w = atoi(boundsWidthStr);
+    h = atoi(boundsHeightStr);
+    boundsX = atoi(boundsXStr);
+    boundsY = atoi(boundsYStr);
+  }
 
 #ifdef DEBUG
   logfile << "dimensions :" << w << " x " << h << endl;
   logfile << "vendor : " << vendor << endl;
+  logfile << "boundsW : " << w << endl;
 #endif
 
   image_widths.clear();
@@ -199,8 +214,8 @@ RawTile OpenSlideImage::getTile( int seq, int ang, unsigned int res,
 #endif
 
   int pos_factor = pow( 2, openslide_zoom );
-  read( openslide_zoom, tw, th, (long) xoffset * pos_factor,
-        (long) yoffset * pos_factor, rawtile.data );
+  read( openslide_zoom, tw, th, (long) xoffset * pos_factor + boundsX,
+        (long) yoffset * pos_factor + boundsY, rawtile.data );
 
 #ifdef DEBUG
   logfile << "OpenSlide :: getTile() :: " << timer.getTime()

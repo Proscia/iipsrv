@@ -57,6 +57,7 @@ void OpenSlideImage::loadImageInfo( int x, int y ) throw( file_error ) {
 #endif
 
   long int w, h;
+  long int boundsWidth, boundsHeight;
   const char *vendor;
   currentX = x;
   currentY = y;
@@ -76,10 +77,22 @@ void OpenSlideImage::loadImageInfo( int x, int y ) throw( file_error ) {
   const char *boundsYStr = openslide_get_property_value( osr, OPENSLIDE_PROPERTY_NAME_BOUNDS_Y );
 
   if ( boundsWidthStr && boundsHeightStr && boundsXStr && boundsYStr ) {
-    w = atoi(boundsWidthStr);
-    h = atoi(boundsHeightStr);
     boundsX = atoi(boundsXStr);
     boundsY = atoi(boundsYStr);
+    boundsWidth = atoi(boundsWidthStr);
+    boundsHeight = atoi(boundsHeightStr);
+    if (boundsWidth > w) {
+      w = w - boundsX;
+    }
+    else {
+      w = boundsWidth;
+    }
+    if (boundsHeight > y) {
+      h = h - boundsY;
+    }
+    else {
+      h = boundsHeight;
+    }
   }
 
 #ifdef DEBUG

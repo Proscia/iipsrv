@@ -39,7 +39,7 @@
 #include "OpenJPEGImage.h"
 #endif
 
-#define MAXIMAGECACHE 1000  // Max number of items in image cache
+#define MAXIMAGECACHE 200  // Max number of items in image cache
 
 
 

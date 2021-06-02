@@ -44,7 +44,7 @@ struct _openslide {
 
 #define TILESIZE 256
 
-const std::string OPENSLIDE_EXTENSIONS[] = {"svs", "vms", "vmu", "ndpi", "mrxs", "scn", "vtif", "bif", "ptiff"};
+const std::string OPENSLIDE_EXTENSIONS[] = {"svs", "vms", "vmu", "ndpi", "mrxs", "scn", "vtif", "bif", "tif", "ptiff"};
 
 /// Image class for OpenSlide supported Images: Inherits from IIPImage. Uses the OpenSlide library.
 class OpenSlideImage : public IIPImage {

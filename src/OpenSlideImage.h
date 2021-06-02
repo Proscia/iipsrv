@@ -18,6 +18,28 @@
 extern "C" {
 #include "openslide/openslide.h"
 #include "openslide/openslide-features.h"
+
+/* the main structure */
+struct _openslide {
+  void *ops;
+  void **levels;
+  void *data;
+  int32_t level_count;
+
+  // associated images
+  void *associated_images;  // created automatically
+  const char **associated_image_names; // filled in automatically from hashtable
+
+  // metadata
+  void *properties; // created automatically
+  const char **property_names; // filled in automatically from hashtable
+
+  // cache
+  void *cache;
+
+  // error handling, NULL if no error
+  void *error; // must use g_atomic_pointer!
+};
 }
 
 #define TILESIZE 256

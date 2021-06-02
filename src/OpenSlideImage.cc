@@ -3,7 +3,7 @@
 #include <cmath>
 #include <sstream>
 
-//#define DEBUG true
+// #define DEBUG true
 using namespace std;
 
 #ifdef DEBUG
@@ -327,6 +327,20 @@ void OpenSlideImage::downsample_region( openslide_t *osr, unsigned int *buf, lon
     openslide_read_region( osr, tmpbuf, x, y, bestLayer, floor( w * downSamplingFactor ),
                            floor( h * downSamplingFactor ));
 
+    // if an openslide error occurs during read_region, it's likely that it was caused by a corrupt tile
+    // if so, clear the error and try to read a region at a higher-resolution level and downsample
+    if (openslide_get_error(osr)) {
+      osr->error = NULL;
+      if (bestLayer > 0) {
+        downSamplingFactor = (pow( 2, z ) / openslide_get_level_downsample( osr, bestLayer - 1));
+        free(tmpbuf);
+        tmpbuf = (unsigned int *) malloc( floor( w * downSamplingFactor )
+                                                    * floor( h * downSamplingFactor ) * 4 );
+        openslide_read_region( osr, tmpbuf, x, y, bestLayer - 1, floor( w * downSamplingFactor ),
+                           floor( h * downSamplingFactor ));
+      }
+    }
+
     // Debugging output Before Downsampling/
     //    char tileFileName[MAX_PATH];
     //    sprintf(tileFileName, "zoom%d-row%ld.jpg", z, y);
@@ -352,9 +366,14 @@ void OpenSlideImage::downsample_region( openslide_t *osr, unsigned int *buf, lon
   } else {
     /* no need to downsample, since zoom level is in the slide  */
 #ifdef DEBUG
-    logfile << "openslide_read_region" << std::endl;
+    logfile << "openslide_read_region " << x << " " << y << " " << bestLayer << " " << w << " " << h << std::endl;
 #endif
 
     openslide_read_region( osr, buf, x, y, bestLayer, w, h );
+  }
+  // if an openslide error occurs while reading a region, we would rather have a single tile not be rendered
+  //  rather than preventing all future reads from this osr object from succeeding (as is the standard openslide behavior)
+  if (openslide_get_error(osr)) {
+    osr->error = NULL;
   }
 }

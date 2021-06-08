@@ -127,7 +127,7 @@ void IIPImage::testImageType()
     int dot = imagePath.find_last_of( '.' );
     suffix = imagePath.substr( dot + 1, imagePath.length() );
     transform( suffix.begin(), suffix.end(), suffix.begin(), ::tolower );
-    if (find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
+    if (imagePath.rfind("_component_data.tif") != imagePath.length() - strlen("_component_data.tif") && find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
       format = OPENSLIDE;
     }
     else if (suffix == "czi") {

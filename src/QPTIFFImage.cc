@@ -89,6 +89,11 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
   TIFFGetField( tiff, TIFFTAG_SAMPLEFORMAT, &sampleformat );
   TIFFGetField( tiff, TIFFTAG_COMPRESSION, &compression );
 
+  if (w < 2000 && h < 2000){
+    tile_width = w;
+    tile_height = h;
+  }
+
   if ( samplesperpixel == 1 ){
     // Fluorescence QPTIFF and FUSED_TIFF have N channel directories per resolution.
     // For QPTIFF the N+1st directory is the thumbnail.
@@ -147,6 +152,7 @@ void QPTIFFImage::loadImageInfo( int seq, int ang )
 
     TIFFGetField( tiff, TIFFTAG_IMAGEWIDTH, &w );
     TIFFGetField( tiff, TIFFTAG_IMAGELENGTH, &h );
+    logfile << "QPTIFFImage:: " << "directory " << w << " " << h << endl;
     // ignore downsamples smaller than 2K x 2K
     if (w < 2000 && h < 2000) {
       break;
@@ -341,12 +347,17 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
 //   TIFFGetField( tiff, TIFFTAG_SAMPLESPERPIXEL, &channels );
 //   TIFFGetField( tiff, TIFFTAG_BITSPERSAMPLE, &bpc );
 
+  bool stripped_image = false;
 
+  if (im_width < 2000 && im_height < 2000){
+    stripped_image = true;
+    tw = im_width;
+    th = im_height;
+  }
   // Make sure this resolution is tiled
-  if( (tw == 0) || (th == 0) ){
+  else if( (tw == 0) || (th == 0) ){
     throw file_error( "Requested resolution is not tiled" );
   }
-
 
   // Total number of pixels in tile
   unsigned int np = tw * th;
@@ -372,7 +383,6 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
   if( ( tile / ntlx == ntly - 1 ) && rem_y != 0 ) {
     th = rem_y;
   }
-
 
   // Handle various colour spaces
   if( colour == PHOTOMETRIC_CIELAB ) {
@@ -400,7 +410,14 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
     colourspace = sRGB;
   }
 
-  tsize_t tile_size = TIFFTileSize(tiff);
+  tsize_t tile_size = 0;
+  if (stripped_image){
+    tile_size = im_height * im_height * bpc;
+  }
+  else {
+    tile_size = TIFFTileSize(tiff);
+  }
+
   if (loglevel >= 2)
     logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
             << "TIFFTileSize = " << tile_size << endl;
@@ -415,16 +432,28 @@ RawTile QPTIFFImage::getTile( int seq, int ang, unsigned int res, int layers, un
       throw file_error( "tiff malloc tile failed" );
     }
 
-    // Decode and read the tile
-    int length = TIFFReadEncodedTile( tiff, (ttile_t) tile,
-            channels_tile_bufs[i], (tsize_t) - 1 );
-    if( length == -1 ) {
-      if (loglevel >= 2)
-        logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
-                << "TIFFReadEncodedTile failed for channel i = " << i
-                << " (of " << channels << ")" << endl;
+    if (stripped_image){
+      tdata_t buffer = channels_tile_bufs[i];
+      int length = 0;
+      for (tstrip_t strip = 0; strip < TIFFNumberOfStrips( tiff ); strip++ ){
+        length = TIFFReadEncodedStrip( tiff, strip, buffer, (tsize_t) -1 );
+        if ( length == -1 ){
+          throw file_error( "TIFFReadEncodedStrip failed for " + getFileName( seq, ang ) );
+        }
+        buffer += length;
+      }
+    }
+    else {
+      int length = TIFFReadEncodedTile( tiff, (ttile_t) tile,
+              channels_tile_bufs[i], (tsize_t) - 1 );
+      if( length == -1 ) {
+        if (loglevel >= 2)
+          logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                  << "TIFFReadEncodedTile failed for channel i = " << i
+                  << " (of " << channels << ")" << endl;
+        throw file_error( "TIFFReadEncodedTile failed for " + getFileName( seq, ang ) );
+      }
 
-      throw file_error( "TIFFReadEncodedTile failed for " + getFileName( seq, ang ) );
     }
     TIFFReadDirectory( tiff );
   }   

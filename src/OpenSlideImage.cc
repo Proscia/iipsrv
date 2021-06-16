@@ -87,7 +87,7 @@ void OpenSlideImage::loadImageInfo( int x, int y ) throw( file_error ) {
     else {
       w = boundsWidth;
     }
-    if (boundsHeight > y) {
+    if (boundsHeight > h) {
       h = h - boundsY;
     }
     else {

@@ -42,7 +42,7 @@ jobs:
             docker tag proscia/iipsrv ${REPO_IMAGE_URI}:${DATE_COMMIT_TAG}
             docker images || true
 
-            $(aws ecr get-login --no-include-email)
+            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
             # (aws ecr create-repository help | cat) || true  # "WARNING: terminal is not fully functional" [so cat the help text]
             # Unknown options: --image-tag-mutability, IMMUTABLE
             # aws ecr create-repository --repository-name "${REPO_IMAGE_URI}" --image-tag-mutability IMMUTABLE \

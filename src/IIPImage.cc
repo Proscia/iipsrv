@@ -121,6 +121,9 @@ void IIPImage::testImageType()
     isFile = true;
     timestamp = sb.st_mtime;
 
+  int dot = imagePath.find_last_of( '.' );
+  suffix = imagePath.substr( dot + 1, imagePath.length() );
+      
   if (suffix == "czi") {
       format = CZI;
     }
@@ -177,8 +180,6 @@ void IIPImage::testImageType()
     if (format == TIF || format == UNSUPPORTED) {
       #ifdef HAVE_OPENSLIDE
       // Detect openslide formats, after we have already identified QPTIFF and FUSED_TIFF
-      int dot = imagePath.find_last_of( '.' );
-      suffix = imagePath.substr( dot + 1, imagePath.length() );
       transform( suffix.begin(), suffix.end(), suffix.begin(), ::tolower );
       if (imagePath.rfind("_component_data.tif") != imagePath.length() - strlen("_component_data.tif") && find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
         format = OPENSLIDE;

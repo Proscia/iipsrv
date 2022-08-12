@@ -78,7 +78,7 @@ RUN cd /opt/libCZI && \
         && [ -f Src/JxrDecode/libJxrDecodeStatic.a ] \
         && [ -x Src/CZICmd/CZIcmd ]
 
-COPY .. /opt/iipsrv
+COPY . /opt/iipsrv
 RUN cd /opt/iipsrv && ls
 
 # RUN cd /opt && git clone ${IIPSRV_REPOSITORY_URL} && \
@@ -91,13 +91,13 @@ RUN cd /opt/iipsrv && \
     shopt -s globstar && ls -l **/*.fcgi
 
 
-COPY deploy.sh /tmp/deploy.sh
+COPY docker/deploy.sh /tmp/deploy.sh
 RUN chmod +x /tmp/deploy.sh
 
-COPY start-iip.sh /tmp/start-iip.sh
+COPY docker/start-iip.sh /tmp/start-iip.sh
 RUN chmod +x /tmp/start-iip.sh
 
-COPY check-status.sh /tmp/check-status.sh
+COPY docker/check-status.sh /tmp/check-status.sh
 RUN chmod +x /tmp/check-status.sh
 
 RUN ldconfig -v

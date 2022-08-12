@@ -16,7 +16,7 @@ jobs:
             IIPSRV_REPOSITORY_URL=$(echo ${CIRCLE_REPOSITORY_URL} \
                 | perl -pe "s{:}{/}; s{^git}{https://${GITHUB_OAUTH}:x-oauth-basic}")
 
-            docker build docker/ -t=proscia/iipsrv \
+            docker build . -t=proscia/iipsrv \
                 --build-arg IIPSRV_REPOSITORY_URL=${CIRCLE_REPOSITORY_URL} \
                 --build-arg IIPSRV_BRANCH=${CIRCLE_BRANCH} \
                 --build-arg QUIET=cat

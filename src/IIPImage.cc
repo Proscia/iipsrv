@@ -121,20 +121,10 @@ void IIPImage::testImageType()
     isFile = true;
     timestamp = sb.st_mtime;
 
-#ifdef HAVE_OPENSLIDE
-    // Dirty hack to detect OpenSlide format, since some formats have same file signatures
-    // than TIFF.
-    int dot = imagePath.find_last_of( '.' );
-    suffix = imagePath.substr( dot + 1, imagePath.length() );
-    transform( suffix.begin(), suffix.end(), suffix.begin(), ::tolower );
-    if (imagePath.rfind("_component_data.tif") != imagePath.length() - strlen("_component_data.tif") && find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
-      format = OPENSLIDE;
-    }
-    else if (suffix == "czi") {
+  if (suffix == "czi") {
       format = CZI;
     }
     else
-#endif
     {
       // Magic file signature for JPEG2000
       static const unsigned char j2k[10] = {0x00,0x00,0x00,0x0C,0x6A,0x50,0x20,0x20,0x0D,0x0A};
@@ -183,6 +173,17 @@ void IIPImage::testImageType()
       else {
         format = UNSUPPORTED;
       }
+    }
+    if (format == TIF || format == UNSUPPORTED) {
+      #ifdef HAVE_OPENSLIDE
+      // Detect openslide formats, after we have already identified QPTIFF and FUSED_TIFF
+      int dot = imagePath.find_last_of( '.' );
+      suffix = imagePath.substr( dot + 1, imagePath.length() );
+      transform( suffix.begin(), suffix.end(), suffix.begin(), ::tolower );
+      if (imagePath.rfind("_component_data.tif") != imagePath.length() - strlen("_component_data.tif") && find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
+        format = OPENSLIDE;
+      }
+      #endif
     }
   }
   else{

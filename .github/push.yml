@@ -1,0 +1,82 @@
+name: Push
+
+on: [push]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest-4-cores
+    env:
+      TEST_TAG: iipsrv:test
+
+    permissions:
+      id-token: write   # This is required for requesting the JWT  
+      contents: read   # This is required for actions/checkout@v2
+
+    steps:
+      - 
+        name: Cleanup github.workspace
+        run: sudo chown -R $USER:$USER ${{ github.workspace }}
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - 
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: | 
+            ${{ secrets.ACTIONS_DEPLOY_KEY_CORE_GIT_SUBMODULE }}
+            ${{ secrets.ACTIONS_DEPLOY_KEY }}
+      -
+        name: Configure AWS Credentials - Production-App
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::583366545747:role/proscia-app-production-github-actions-role
+          role-session-name: IAMSession
+      -       
+        name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Build web service
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./ 
+          file: ./docker/Dockerfile
+          build-args: GIT_COMMIT=${{ github.sha }}
+          builder: ${{ steps.buildx.outputs.name }}
+          push: false
+          load: true
+          tags: proscia/iipsrvx:latest,${{ env.TEST_TAG }}
+      -
+        name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+      -
+        name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::385304362846:role/proscia-user-production-github-actions-role
+          role-session-name: IAMSession
+      - 
+        name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      -
+        name: Push docker image to Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: iipsrv
+          IMAGE_TAG: ${{ github.ref_name }}
+        run: |
+          docker tag ${{ env.TEST_TAG }} $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+      -
+        name: List Images
+        run: |
+          docker images
+ 

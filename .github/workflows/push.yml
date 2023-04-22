@@ -27,7 +27,6 @@ jobs:
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: | 
-            ${{ secrets.ACTIONS_DEPLOY_KEY_CORE_GIT_SUBMODULE }}
             ${{ secrets.ACTIONS_DEPLOY_KEY }}
       -
         name: Configure AWS Credentials - Production-App

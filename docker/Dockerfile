@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 SHELL ["/bin/bash", "-c"]
 
@@ -101,5 +101,9 @@ COPY docker/check-status.sh /tmp/check-status.sh
 RUN chmod +x /tmp/check-status.sh
 
 RUN ldconfig -v
+
+RUN useradd worker --uid 1000 --gid 1000
+RUN chown worker:worker /tmp
+USER worker:worker
 
 ENTRYPOINT ["/tmp/deploy.sh"]

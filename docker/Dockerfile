@@ -102,7 +102,7 @@ RUN chmod +x /tmp/check-status.sh
 
 RUN ldconfig -v
 
-RUN useradd worker --uid 1000 --gid 1000
+RUN useradd worker --uid 1000
 RUN chown worker:worker /tmp
 USER worker:worker
 

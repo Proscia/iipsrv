@@ -21,7 +21,7 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - 
         name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       -
         name: Setup SSH
         uses: webfactory/ssh-agent@v0.7.0
@@ -30,7 +30,7 @@ jobs:
             ${{ secrets.ACTIONS_DEPLOY_KEY }}
       -
         name: Configure AWS Credentials - Production-App
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::583366545747:role/proscia-app-production-github-actions-role
@@ -38,11 +38,11 @@ jobs:
       -       
         name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
       -
-        name: Build web service
+        name: Build iipsrv
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./ 
           file: ./docker/Dockerfile
@@ -56,7 +56,7 @@ jobs:
         run: echo ${{ steps.docker_build.outputs.digest }}
       -
         name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::385304362846:role/proscia-user-production-github-actions-role

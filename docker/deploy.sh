@@ -16,27 +16,27 @@
 #
 
 # Logs
-echo "/tmp/iip.out {"          > /etc/logrotate.d/iip
-echo "  copytruncate"                   >> /etc/logrotate.d/iip
-echo "  daily"                          >> /etc/logrotate.d/iip
-echo "  rotate 14"                      >> /etc/logrotate.d/iip
-echo "  compress"                       >> /etc/logrotate.d/iip
-echo "  missingok"                      >> /etc/logrotate.d/iip
-echo "  create 640 root root"           >> /etc/logrotate.d/iip
-echo "  su root root"                   >> /etc/logrotate.d/iip
-echo "}"                                >> /etc/logrotate.d/iip
+# echo "/tmp/iip.out {"          > /etc/logrotate.d/iip
+# echo "  copytruncate"                   >> /etc/logrotate.d/iip
+# echo "  daily"                          >> /etc/logrotate.d/iip
+# echo "  rotate 14"                      >> /etc/logrotate.d/iip
+# echo "  compress"                       >> /etc/logrotate.d/iip
+# echo "  missingok"                      >> /etc/logrotate.d/iip
+# echo "  create 640 root root"           >> /etc/logrotate.d/iip
+# echo "  su root root"                   >> /etc/logrotate.d/iip
+# echo "}"                                >> /etc/logrotate.d/iip
 
-sysctl -w net.core.somaxconn=2048
+# sysctl -w net.core.somaxconn=2048
 
 /tmp/start-iip.sh
 
-touch /tmp/crontab
-echo "NB_IIP_PROCESS=$NB_IIP_PROCESS" >> /tmp/crontab
-echo "*/1 * * * * /bin/bash /tmp/check-status.sh >> /tmp/cron.out" >> /tmp/crontab
-crontab /tmp/crontab
-rm /tmp/crontab
+# touch /tmp/crontab
+# echo "NB_IIP_PROCESS=$NB_IIP_PROCESS" >> /tmp/crontab
+# echo "*/1 * * * * /bin/bash /tmp/check-status.sh >> /tmp/cron.out" >> /tmp/crontab
+# crontab /tmp/crontab
+# rm /tmp/crontab
 
-service rsyslog restart
-service cron restart
+# service rsyslog restart
+# service cron restart
 
 tail -F /tmp/iip.out

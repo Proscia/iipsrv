@@ -26,6 +26,7 @@ RUN echo "QUIET: $QUIET" && \
 
 RUN apt-get update -y \
       | eval "$QUIET" && \
+    apt-get upgrade -y | eval "$QUIET" && \
     apt-get install -y \
       cron \
       git \

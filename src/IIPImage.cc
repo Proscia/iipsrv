@@ -123,11 +123,10 @@ void IIPImage::testImageType()
 
   int dot = imagePath.find_last_of( '.' );
   suffix = imagePath.substr( dot + 1, imagePath.length() );
-      
   if (suffix == "czi") {
       format = CZI;
   }
-  else if (suffix != "ndpi" && suffix != "svs" && suffix != "mrxs") {
+  else if (suffix == "ndpi" || suffix == "svs" || suffix == "mrxs") {
       format = OPENSLIDE;
   }
   else {

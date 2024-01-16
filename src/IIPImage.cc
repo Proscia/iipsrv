@@ -127,7 +127,7 @@ void IIPImage::testImageType()
   if (suffix == "czi") {
       format = CZI;
   }
-  else {
+  else if (suffix != "ndpi" && suffix != "svs") {
       // Magic file signature for JPEG2000
       static const unsigned char j2k[10] = {0x00,0x00,0x00,0x0C,0x6A,0x50,0x20,0x20,0x0D,0x0A};
 

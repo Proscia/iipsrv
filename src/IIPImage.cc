@@ -126,9 +126,8 @@ void IIPImage::testImageType()
       
   if (suffix == "czi") {
       format = CZI;
-    }
-    else
-    {
+  }
+  else {
       // Magic file signature for JPEG2000
       static const unsigned char j2k[10] = {0x00,0x00,0x00,0x0C,0x6A,0x50,0x20,0x20,0x0D,0x0A};
 
@@ -177,13 +176,22 @@ void IIPImage::testImageType()
         format = UNSUPPORTED;
       }
     }
+    logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "checking for openslide image" << endl;
     if (format == TIF || format == UNSUPPORTED) {
       #ifdef HAVE_OPENSLIDE
       // Detect openslide formats, after we have already identified QPTIFF and FUSED_TIFF
       transform( suffix.begin(), suffix.end(), suffix.begin(), ::tolower );
+      logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "suffix: " << suffix
+                << ", rfind = " << imagePath.rfind("_component_data.tif")
+                << ", comparison = " << imagePath.length() - strlen("_component_data.tif")
+                 << endl;
       if (imagePath.rfind("_component_data.tif") != imagePath.length() - strlen("_component_data.tif") && find(begin(OPENSLIDE_EXTENSIONS), end(OPENSLIDE_EXTENSIONS), suffix) != end(OPENSLIDE_EXTENSIONS)) {
         format = OPENSLIDE;
       }
+      logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "format: " << format << endl;
       #endif
     }
   }
@@ -227,7 +235,8 @@ void IIPImage::testImageType()
 #endif
 
   }
-
+  logfile << __FILE__ << ":" << __LINE__ << " " << __FUNCTION__ << "():: "
+                << "format: " << format << endl;
 }
 
 
